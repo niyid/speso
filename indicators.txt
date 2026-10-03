@@ -1,0 +1,5 @@
+gdp=3.4
+inflation=2.6
+unemployment=4.8
+trade=4.1
+stress=22

@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 24-Year Journey to Speso: A Global, Peer-to-Peer Currency Whose Value Comes From the World Economy</title>
+
+<!-- SEO -->
+<meta name="description" content="The idea dates to 1995; in April 2002 I wrote the first code for a global, peer-to-peer, decentralized currency whose value derives from global economic metrics. Twenty-four years later it is Speso, open code in plain Java. How double-spend is stopped, how a two-key oracle sets the price, and what still cannot be solved.">
+<meta name="author" content="niyid">
+<meta name="keywords" content="speso, spesmilo, cryptocurrency, peer-to-peer, double-spend, oracle, Java, blockchain, Esperanto, global economic indicators, open source">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="The 24-Year Journey to Speso: A Global, Peer-to-Peer Currency Whose Value Comes From the World Economy">
+<meta property="og:description" content="The idea dates to 1995; in April 2002 I wrote the first code for a global, peer-to-peer, decentralized currency whose value derives from global economic metrics. Twenty-four years later it is Speso, open code in plain Java. How double-spend is stopped, how a two-key oracle sets the price, and what still cannot be solved.">
+<meta property="og:url" content="https://niyid.github.io/speso/speso-article.html">
+<meta property="og:image" content="https://niyid.github.io/speso/speso-header.png">
+<meta property="og:site_name" content="Speso">
+<meta property="article:author" content="https://github.com/niyid">
+
+<!-- Twitter/X Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The 24-Year Journey to Speso: A Global, Peer-to-Peer Currency Whose Value Comes From the World Economy">
+<meta name="twitter:description" content="From a notebook page in April 2002 to open Java code in 2026: a global peer-to-peer currency priced by the world economy.">
+<meta name="twitter:image" content="https://niyid.github.io/speso/speso-header.png">
+
+<link rel="canonical" href="https://niyid.github.io/speso/speso-article.html">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg:           #06080d;
+    --surface:      #0c1018;
+    --panel:        #101520;
+    --border:       #1c2433;
+    --border-hi:    #2a3a52;
+    --emerald:      #10b981;
+    --emerald-dim:  rgba(16,185,129,0.15);
+    --amber:        #f59e0b;
+    --amber-dim:    rgba(245,158,11,0.12);
+    --red:          #ef4444;
+    --red-dim:      rgba(239,68,68,0.12);
+    --blue:         #60a5fa;
+    --blue-dim:     rgba(96,165,250,0.12);
+    --violet:       #a78bfa;
+    --text:         #e2e8f0;
+    --muted:        #64748b;
+    --muted-hi:     #94a3b8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE OVERLAY ─────────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  /* grid lines */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(16,185,129,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,185,129,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── LAYOUT ─────────────────────────────────────────────────── */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 28px 96px;
+  }
+
+  /* ─── HERO ───────────────────────────────────────────────────── */
+  .hero {
+    padding: 80px 0 64px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 64px;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--emerald);
+    margin-bottom: 28px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--emerald);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 6vw, 68px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+  }
+
+  h1 .accent { color: var(--emerald); }
+  h1 .italic { font-style: italic; }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .hero-meta span { display: flex; align-items: center; gap: 6px; }
+  .hero-meta .sep { color: var(--border-hi); }
+
+  .hero-lead {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--muted-hi);
+    line-height: 1.7;
+    max-width: 680px;
+    border-left: 3px solid var(--emerald);
+    padding-left: 20px;
+  }
+
+  /* ─── GHOST ANIMATION ────────────────────────────────────────── */
+  .ghost-hero {
+    position: absolute;
+    right: -20px;
+    top: 40px;
+    width: 200px;
+    opacity: 0.06;
+    pointer-events: none;
+  }
+
+  /* ─── SECTION STRUCTURE ──────────────────────────────────────── */
+  section { margin-bottom: 72px; }
+
+  .section-kicker {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--emerald);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-kicker::after {
+    content: '';
+    display: block;
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(24px, 3.5vw, 36px);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin-bottom: 24px;
+  }
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  p { margin-bottom: 18px; color: var(--muted-hi); }
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--text); font-weight: 500; }
+
+  /* ─── PULL QUOTE ─────────────────────────────────────────────── */
+  .pull-quote {
+    background: var(--emerald-dim);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-left: 4px solid var(--emerald);
+    border-radius: 0 8px 8px 0;
+    padding: 24px 28px;
+    margin: 32px 0;
+  }
+
+  .pull-quote p {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .pull-quote cite {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--emerald);
+    text-transform: uppercase;
+  }
+
+  /* ─── THREAT MODEL DIAGRAM ───────────────────────────────────── */
+  .threat-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 28px;
+    margin: 32px 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .threat-diagram::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--amber), var(--emerald));
+  }
+
+  .diagram-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  .threat-svg { width: 100%; height: auto; display: block; }
+
+  /* ─── PRIVACY PILLARS GRID ───────────────────────────────────── */
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 32px 0;
+  }
+
+  @media (max-width: 600px) { .pillars-grid { grid-template-columns: 1fr; } }
+
+  .pillar {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .pillar:hover { border-color: var(--border-hi); }
+
+  .pillar-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .pillar-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .pillar h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .pillar p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .pillar-emerald { border-left: 3px solid var(--emerald); }
+  .pillar-amber   { border-left: 3px solid var(--amber); }
+  .pillar-blue    { border-left: 3px solid var(--blue); }
+  .pillar-violet  { border-left: 3px solid var(--violet); }
+
+  /* ─── CODE SNIPPET ───────────────────────────────────────────── */
+  .code-block {
+    background: #070a0f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 28px 0;
+    font-size: 13px;
+  }
+
+  .code-header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .code-header span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .code-header .lang {
+    color: var(--emerald);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .code-body {
+    padding: 20px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+    font-size: 12.5px;
+  }
+
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .num { color: #f78c6c; }
+  .cm { color: #546e7a; font-style: italic; }
+  .ty { color: #ffcb6b; }
+  .prop { color: var(--emerald); }
+
+  /* ─── RIDE FLOW DIAGRAM ──────────────────────────────────────── */
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 28px;
+    margin: 32px 0;
+  }
+
+  .flow-steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    margin-top: 8px;
+  }
+
+  .flow-step {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .flow-step:last-child { border-bottom: none; }
+
+  .flow-step-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .step-emerald { background: var(--emerald-dim); color: var(--emerald); border: 1px solid rgba(16,185,129,0.3); }
+  .step-amber   { background: var(--amber-dim);   color: var(--amber);   border: 1px solid rgba(245,158,11,0.3); }
+  .step-blue    { background: var(--blue-dim);     color: var(--blue);    border: 1px solid rgba(96,165,250,0.3); }
+  .step-red     { background: var(--red-dim);      color: var(--red);     border: 1px solid rgba(239,68,68,0.3); }
+  .step-violet  { background: rgba(167,139,250,0.12); color: var(--violet); border: 1px solid rgba(167,139,250,0.3); }
+
+  .flow-step-content strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .flow-step-content p {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .privacy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--emerald-dim);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--emerald);
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+  }
+
+  /* ─── GEO HASH VISUAL ────────────────────────────────────────── */
+  .geohash-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 32px 0;
+  }
+
+  /* ─── COMPARISON CARDS (replaces table — Substack-safe) ─────── */
+  .compare-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 28px 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .compare-header {
+    display: grid;
+    grid-template-columns: 160px 1fr 1fr;
+    background: var(--panel);
+    border-bottom: 2px solid var(--border-hi);
+  }
+
+  .compare-header-cell {
+    padding: 12px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .compare-header-cell:nth-child(1) { color: var(--muted); }
+  .compare-header-cell:nth-child(2) { color: var(--red); border-left: 1px solid var(--border); }
+  .compare-header-cell:nth-child(3) { color: var(--emerald); border-left: 1px solid var(--border); }
+
+  .compare-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row:hover { background: rgba(255,255,255,0.018); }
+
+  .compare-cell {
+    padding: 14px 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .compare-cell:nth-child(2),
+  .compare-cell:nth-child(3) { border-left: 1px solid var(--border); }
+
+  .compare-cell.dim-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .compare-cell.bad  { color: #f87171; }
+  .compare-cell.good { color: #34d399; }
+  .compare-cell.mid  { color: var(--amber); }
+
+  @media (max-width: 580px) {
+    .compare-header { grid-template-columns: 1fr; }
+    .compare-header-cell:nth-child(1) { display: none; }
+    .compare-header-cell:nth-child(2),
+    .compare-header-cell:nth-child(3) { border-left: none; border-top: 1px solid var(--border); }
+    .compare-row { grid-template-columns: 1fr; }
+    .compare-cell.dim-label {
+      background: var(--panel);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 16px 4px;
+    }
+    .compare-cell:nth-child(2),
+    .compare-cell:nth-child(3) { border-left: none; padding-top: 6px; padding-bottom: 6px; }
+    .compare-cell:nth-child(3) { padding-bottom: 14px; }
+  }
+
+  /* ─── ARCHITECTURE EMBED ─────────────────────────────────────── */
+  .embed-wrapper {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 32px 0;
+  }
+
+  .embed-caption {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .arch-embed {
+    width: 100%;
+    border: none;
+    display: block;
+    background: #0a0c10;
+  }
+
+  /* ─── TECH STACK PILLS ───────────────────────────────────────── */
+  .tech-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .tech-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted-hi);
+    letter-spacing: 0.05em;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .tech-pill:hover { border-color: var(--border-hi); color: var(--text); }
+  .tech-pill .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green  { background: var(--emerald); }
+  .dot-amber  { background: var(--amber); }
+  .dot-blue   { background: var(--blue); }
+  .dot-violet { background: var(--violet); }
+
+  /* ─── CALLOUT BOXES ──────────────────────────────────────────── */
+  .callout {
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 24px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .callout-warn {
+    background: var(--amber-dim);
+    border: 1px solid rgba(245,158,11,0.25);
+  }
+
+  .callout-info {
+    background: var(--blue-dim);
+    border: 1px solid rgba(96,165,250,0.25);
+  }
+
+  .callout-good {
+    background: var(--emerald-dim);
+    border: 1px solid rgba(16,185,129,0.25);
+  }
+
+  .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+
+  .callout-body p { font-size: 13.5px; margin: 0; line-height: 1.6; }
+  .callout-body strong { display: block; margin-bottom: 4px; font-size: 13px; }
+
+  /* ─── FOOTER ─────────────────────────────────────────────────── */
+  .article-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .footer-left p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin: 0 0 6px;
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--emerald-dim);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--emerald);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: background 0.2s;
+  }
+
+  .footer-link:hover { background: rgba(16,185,129,0.22); }
+
+  /* ─── ANIMATIONS ─────────────────────────────────────────────── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero { animation: fadeSlideUp 0.7s ease both; }
+  section { animation: fadeSlideUp 0.6s ease both; }
+  section:nth-child(2) { animation-delay: 0.1s; }
+  section:nth-child(3) { animation-delay: 0.15s; }
+  section:nth-child(4) { animation-delay: 0.2s; }
+  section:nth-child(5) { animation-delay: 0.25s; }
+  section:nth-child(6) { animation-delay: 0.3s; }
+
+  @media (max-width: 600px) {
+    .container { padding: 0 16px 64px; }
+    .hero { padding: 48px 0 40px; }
+    .ghost-hero { display: none; }
+  }
+
+  /* ─── SPESO ADDITIONS ─────────────────────────────────────────── */
+  h1 .gold { color: var(--amber); }
+  .hero-figure { margin: 0 0 44px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #000; }
+  .hero-figure img { display: block; width: 100%; height: auto; }
+  .hero-figure figcaption { background: var(--panel); border-top: 1px solid var(--border); padding: 10px 16px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); letter-spacing: 0.06em; }
+  .hero-lead + .hero-lead { margin-top: 18px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 28px 0; }
+  @media (max-width: 640px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .stat b { display: block; font-family: 'Playfair Display', serif; font-size: 28px; color: var(--amber); line-height: 1.1; }
+  .stat span { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .timeline { border-left: 2px solid var(--border-hi); margin: 28px 0 28px 8px; padding-left: 22px; }
+  .tl-item { position: relative; padding-bottom: 20px; }
+  .tl-item::before { content: ''; position: absolute; left: -29px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); }
+  .tl-item .when { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--amber); letter-spacing: 0.1em; }
+  .tl-item p { margin: 4px 0 0; font-size: 14px; }
+  .formula { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 24px 0;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text); line-height: 1.9; overflow-x: auto; }
+  .formula .dim { color: var(--muted); }
+  .compare-header.c4, .compare-row.c4 { grid-template-columns: 170px 1fr 1fr 1fr; }
+  a { color: var(--emerald); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <div class="hero-eyebrow">Digital Currency · Distributed Systems · Open Source</div>
+
+    <figure class="hero-figure">
+      <img src="speso-header.png" width="1997" height="787" alt="The 24 Year Journey to Speso: a global, peer-to-peer currency. Decentralized, distributed, global economic metrics. A notebook page from April 2002 on the left, a globe wrapped in a chain of blocks in the centre.">
+      <figcaption>1995 · THE SEED &nbsp;→&nbsp; 2002 · FIRST CODE &nbsp;→&nbsp; 24 YEARS OF DETOURS &amp; DISTRACTIONS &nbsp;→&nbsp; TODAY · A DOCUMENTARY</figcaption>
+    </figure>
+
+    <h1>
+      The 24-Year Journey to <span class="gold italic">Speso</span>:<br>
+      A Currency Priced by the <span class="accent">World Economy</span>
+    </h1>
+
+    <div class="hero-meta">
+      <span>📅 October 2026</span><span class="sep">·</span>
+      <span>🔗 github.com/niyid/speso</span><span class="sep">·</span>
+      <span>☕ Java 17+ · zero dependencies</span><span class="sep">·</span>
+      <span>⏱ 16 min read</span>
+    </div>
+
+    <p class="hero-lead">
+      So back in April 2002, I had this idea of a global currency. Peer-to-peer. Decentralized. Distributed.
+      The value deriving from global economic metrics. I did not give it a name, but I immediately identified the most
+      complex issue I had to solve: double-spend. And I identified the overall data structure: a linked list of sorts.
+      Speso is a recent development, even though at the time I had an interest in Esperanto. Somewhere along the line,
+      distractions and detours came along, and after several pitstops and a grand total of 24 years from when I wrote the
+      first code (the initial idea was in 1995, but I wrote no code), I finally conclude.
+    </p>
+    <p class="hero-lead">
+      Now it is more of a documentary than a threat to the petro-dollar, and me being identified as a threat to the
+      United States and thereby drawing attention from various goon-squad types.
+    </p>
+  </header>
+
+  <!-- ═══ 1: THE NOTEBOOK ═══ -->
+  <section>
+    <div class="section-kicker">April 2002</div>
+    <h2>Five Lines in a Notebook</h2>
+
+    <p>
+      The seed of the idea goes back to 1995, but I wrote no code then. April 2002 is when it became concrete, and when I started writing code.
+      The notebook in the banner above shows how I listed it: five bullet points, and one underlined problem. <strong>Global currency. Peer-to-peer. Decentralized. Distributed. Value from global economic
+      metrics.</strong> Then: <em>the big problem? Double-spend.</em> And under it, a doodle of boxes joined by arrows,
+      with a question mark: <em>linked-list?</em>
+    </p>
+
+    <div class="pull-quote">
+      <p>So back in April 2002, I had this idea of a Global currency. Peer-to-peer. Decentralized. Distributed. The value
+         deriving from global economic metrics. I did not give it a name but I immediately identified the most complex
+         issue I had to solve &mdash; double-spend. And I identified the overall data structure &mdash; a linked-list of sorts.</p>
+      <cite>— The author, on the origin of the idea (the initial idea was in 1995; no code until 2002)</cite>
+    </div>
+
+    <p>
+      Notice what is in that list and what is not. Nothing about mining. Nothing about tokens or fundraising. The two ideas
+      that matter are the ones everybody forgets when they say &ldquo;cryptocurrency&rdquo;: a money with <strong>no
+      issuing authority</strong>, and a money whose <strong>value is anchored to something real</strong> instead of to
+      a promise. Both are hard. The first needs a solution to double-spend. The second needs somebody to tell the chain what
+      the world economy is doing, and that turns out to be the harder of the two. Most of this article is about that.
+    </p>
+
+    <div class="timeline">
+      <div class="tl-item"><div class="when">1995</div><p>The initial idea. No code is written.</p></div>
+      <div class="tl-item"><div class="when">APRIL 2002</div><p>The idea gets concrete: five bullet points, one named problem (double-spend), one data structure (a linked list of sorts). The first code is written. Still no name.</p></div>
+      <div class="tl-item"><div class="when">2002 → 2026</div><p>Distractions and detours. Several pitstops. The idea never stops being the one I come back to. Twenty-four years are counted from that first code.</p></div>
+      <div class="tl-item"><div class="when">2026</div><p>The name arrives: <strong>Speso</strong>, a nod to the Esperanto I was curious about then. The code is finished as plain Java, and the idea finally becomes a documentary of how it works.</p></div>
+    </div>
+  </section>
+
+  <!-- ═══ 2: THE NAME ═══ -->
+  <section>
+    <div class="section-kicker">The Name</div>
+    <h2>Why &ldquo;Speso&rdquo;, and Why an Integer</h2>
+
+    <p>
+      <em>Speso</em> is the Esperanto word for a spending, an expenditure. The word came much later than the idea, but it
+      fit for a second reason: in 1907 René de Saussure (brother of the linguist, and an Esperantist) proposed a
+      monetary unit for the world called the <strong>spesmilo</strong>, symbol <strong>₷</strong>, pinned to 0.733 grams of gold.
+      In his scheme the <strong>speso</strong> was the tiny base unit, &ldquo;purposely made very small to avoid fractions&rdquo;,
+      and the spesmilo was 1,000 spesoj.
+    </p>
+
+    <p>
+      That is exactly what a ledger wants. Floating-point money is a classic source of bugs, so the chain stores
+      <strong>integer spesoj</strong> only, and people deal in ₷ with up to three decimals. Saussure pinned his spesmilo to gold.
+      This one is pinned to the world.
+    </p>
+
+    <div class="stat-grid">
+      <div class="stat"><b>1 ₷</b><span>= 1,000 spesoj</span></div>
+      <div class="stat"><b>10</b><span>main source files</span></div>
+      <div class="stat"><b>1,828</b><span>lines of main code</span></div>
+      <div class="stat"><b>0</b><span>dependencies</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ 3: THE SCORE ═══ -->
+  <section>
+    <div class="section-kicker">Value</div>
+    <h2>The Score: Pricing a Coin With the Planet</h2>
+
+    <p>
+      Every block carries five economic indicators, each stored as an integer number of hundredths of a percent:
+      world GDP growth, global inflation, unemployment, trade growth and a financial stress index. From those five numbers
+      the chain computes a single integer, the <strong>score</strong>. 10,000 means 100.00 and is the baseline.
+    </p>
+
+    <div class="formula">
+      <span class="dim">value of one ₷, in Global Basket Units (GBU)</span><br>
+      1 ₷ = score / 10,000 GBU
+    </div>
+
+    <p>
+      A healthy world makes a spesmilo worth more than 1 GBU, and a sick one less. The arithmetic is integer-only on
+      purpose: every node on the network must compute <em>exactly</em> the same score from the same inputs, or the chain forks.
+      This is the entire function:
+    </p>
+
+    <div class="code-block">
+      <div class="code-header"><span>EconomyIndex.java</span><span class="lang">Java</span></div>
+      <div class="code-body"><span class="kw">static</span> <span class="kw">long</span> score(<span class="kw">long</span>[] i) {
+    <span class="kw">long</span> s = SCORE_BASE;
+    s += <span class="num">8</span> * (i[<span class="num">0</span>] - BASELINE[<span class="num">0</span>]);              <span class="cm">// +1 pt GDP growth        =&gt; +8.00%</span>
+    s -= <span class="num">4</span> * Math.abs(i[<span class="num">1</span>] - BASELINE[<span class="num">1</span>]);      <span class="cm">// 1 pt off inflation target =&gt; -4.00%</span>
+    s -= <span class="num">3</span> * (i[<span class="num">2</span>] - BASELINE[<span class="num">2</span>]);              <span class="cm">// +1 pt unemployment      =&gt; -3.00%</span>
+    s += <span class="num">2</span> * (i[<span class="num">3</span>] - BASELINE[<span class="num">3</span>]);              <span class="cm">// +1 pt trade growth      =&gt; +2.00%</span>
+    s -= (i[<span class="num">4</span>] - BASELINE[<span class="num">4</span>]) / <span class="num">2</span>;              <span class="cm">// +10 stress points       =&gt; -5.00%</span>
+    <span class="kw">return</span> Math.max(SCORE_MIN, Math.min(SCORE_MAX, s));
+}</div>
+    </div>
+
+    <p>
+      One point of GDP growth is worth +8%; a point of unemployment costs 3%; inflation is penalised in <em>both</em>
+      directions around a 2% target. The weights are placeholders, and I say so in the source. They are the part
+      you would argue about for years, and that is the point: the protocol decides <em>how</em> the economy is turned into a
+      price, and the community decides the weights.
+    </p>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">🧮</div>
+      <div class="callout-body">
+        <strong>The price cannot lurch</strong>
+        <p>A block may move the score by at most 2% from the previous block. A reading that would move it further is
+        clamped, step by step, until it is legal. One bad report cannot teleport the price; at worst it drags it, and
+        everyone watching sees it happen.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4: DOUBLE SPEND ═══ -->
+  <section>
+    <div class="section-kicker">The Big Problem</div>
+    <h2>Double-Spend: The Problem I Wrote Down in 2002</h2>
+
+    <p>
+      Digital cash is just data, and data can be copied. If I can send you the same ₷ 10 and also send it to someone else,
+      the money is worthless. With no bank in the middle to say which payment came first, <em>the network itself</em> has
+      to agree on an order. The linked list from my doodle is how: blocks of transactions, each carrying the hash of its parent,
+      so that changing any old block breaks every block after it.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header"><span>Block.java · wire format</span><span class="lang">Spec</span></div>
+      <div class="code-body">index#prevHash#time#bits#nonce#miner#ind,ind,...#tx;tx;...
+tx = fromPub|kind|to|amount|aux|fee|seq|data|sig</div>
+    </div>
+
+    <p>The five defences in the code, in the order they bite:</p>
+
+    <div class="flow-diagram">
+      <div class="diagram-title">Double-spend defences</div>
+      <div class="flow-steps-list">
+        <div class="flow-step"><div class="flow-step-num step-emerald">1</div><div class="flow-step-content"><strong>Sequence numbers</strong><p>Each account's transactions are numbered 0, 1, 2&hellip; Only the next number is valid. Two payments cannot share one, a replay is dead, and the signature covers the number.</p></div></div>
+        <div class="flow-step"><div class="flow-step-num step-blue">2</div><div class="flow-step-content"><strong>Balance checked at the point of application</strong><p>Transactions are applied in order against the account state; an overspend fails exactly where it occurs.</p></div></div>
+        <div class="flow-step"><div class="flow-step-num step-amber">3</div><div class="flow-step-content"><strong>Mempool: first seen wins</strong><p>Pending transactions are validated against confirmed state <em>plus</em> everything already pending. The second of two conflicting payments is rejected on arrival.</p></div></div>
+        <div class="flow-step"><div class="flow-step-num step-violet">4</div><div class="flow-step-content"><strong>Blocks are verified by replay</strong><p>A block is accepted only if replaying its transactions on a copy of the state succeeds and produces the numbers the block claims.</p></div></div>
+        <div class="flow-step"><div class="flow-step-num step-red">5</div><div class="flow-step-content"><strong>Fork choice by cumulative work</strong><p>Not the longest chain, the chain with the most proof-of-work. To rewrite a confirmed payment you must out-work the rest of the network. On a reorg, still-valid transactions from abandoned blocks go back to the mempool.</p></div></div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header"><span>Ledger.java · applying one transaction</span><span class="lang">Java</span></div>
+      <div class="code-body"><span class="kw">if</span> (!t.verify()) <span class="kw">return</span> <span class="kw">false</span>;
+<span class="kw">String</span> from = t.from();
+<span class="kw">if</span> (t.seq != nextSeq(from)) <span class="kw">return</span> <span class="kw">false</span>;               <span class="cm">// replay / double-spend / gap</span>
+<span class="kw">long</span> cost;
+<span class="kw">switch</span> (t.kind) {
+    <span class="kw">case</span> Transaction.PAY -&gt; cost = t.amount;
+    <span class="kw">case</span> Transaction.PAY_GBU -&gt; {
+        cost = Params.mulDivCeil(t.amount, EconomyIndex.SCORE_BASE, rateScore);
+        <span class="kw">if</span> (cost &gt; t.aux) <span class="kw">return</span> <span class="kw">false</span>;                 <span class="cm">// rate moved past sender's limit</span>
+    }
+    <span class="kw">case</span> Transaction.REPORT, Transaction.ATTEST, Transaction.QUOTE -&gt; cost = <span class="num">0</span>;
+    <span class="kw">default</span> -&gt; { <span class="kw">return</span> <span class="kw">false</span>; }
+}
+<span class="kw">long</span> total = cost + t.fee;</div>
+    </div>
+
+    <p>
+      Defence 1 is the line <code>if (t.seq != nextSeq(from)) return false</code>. It is the whole idea in one comparison, and it is
+      what the 2002 notebook was reaching for. The test suite attacks it directly: a conflicting payment with the same sequence number,
+      an exact replay, an overspend with the next number, a block that reuses a sequence number, and a block that spends 80
+      from a balance of 50. All are refused.
+    </p>
+  </section>
+
+  <!-- ═══ 5: ORACLE ═══ -->
+  <section>
+    <div class="section-kicker">The Oracle</div>
+    <h2>The Hard Part: Who Tells the Chain What the World Is Doing?</h2>
+
+    <p>
+      Double-spend is a problem the network can solve for itself, because everything it needs is on the chain.
+      Pricing the coin from the world economy is different: GDP growth is a fact about the outside world, and <strong>no
+      blockchain can verify a fact about the outside world</strong>. All it can do is decide whose claim to believe.
+    </p>
+
+    <p>
+      My first version let any holder publish a signed report of the five indicators, and the chain took the
+      <strong>stake-weighted median</strong>. A block with any other numbers was invalid, so miners no longer chose the price.
+      I wrote down the weakness honestly: <em>the oracle proves agreement, not truth. Anyone holding a majority of the
+      reporting stake can set the number.</em> That sentence was the first item on my list to fix.
+    </p>
+
+    <h3>The fix: two keys</h3>
+
+    <p>
+      The change is a rule that says neither group may set the number alone. <strong>Key 1</strong> is a fixed set of named
+      <em>publishers</em> who sign attestations of the data; the candidate value is their median, and it only counts if enough of them
+      agree (a strict majority by default). <strong>Key 2</strong> is the stake: holders still publish reports, but now their median can
+      only <em>ratify or veto</em> the publishers' value. The price moves when both keys agree, and otherwise it freezes.
+    </p>
+
+    <div class="code-block">
+      <div class="code-header"><span>Ledger.java · the oracle's verdict</span><span class="lang">Java</span></div>
+      <div class="code-body"><span class="cm">// Key 1: publishers. The candidate value is their median, but only if k of n agree with it.</span>
+<span class="kw">List</span>&lt;<span class="kw">long</span>[]&gt; pubs = <span class="kw">new</span> ArrayList&lt;&gt;();
+<span class="kw">for</span> (Report r : attests.values()) pubs.add(r.ind);
+o.pubLive = pubs.size();
+<span class="kw">long</span>[] candidate = <span class="kw">null</span>;
+<span class="kw">if</span> (!pubs.isEmpty() &amp;&amp; pubs.size() &gt;= Params.PUBLISHER_THRESHOLD) {
+    <span class="kw">long</span>[] med = plainMedian(pubs);
+    <span class="kw">for</span> (<span class="kw">long</span>[] p : pubs) <span class="kw">if</span> (EconomyIndex.agrees(p, med)) o.pubAgree++;
+    <span class="kw">if</span> (o.pubAgree &gt;= Params.PUBLISHER_THRESHOLD) candidate = med;
+}
+<span class="kw">if</span> (candidate == <span class="kw">null</span>) {
+    o.why = pubs.size() &lt; Params.PUBLISHER_THRESHOLD ? <span class="str">"publishers below quorum"</span> : <span class="str">"publishers disagree"</span>;
+    <span class="kw">return</span> o;
+}
+<span class="kw">if</span> (!stakeQuorum) { o.why = <span class="str">"no stake quorum to ratify"</span>; <span class="kw">return</span> o; }
+<span class="kw">if</span> (!EconomyIndex.agrees(stakeMedian(stake, total), candidate)) { o.why = <span class="str">"stake vetoes the publishers"</span>; <span class="kw">return</span> o; }
+
+o.quorum = <span class="kw">true</span>;
+o.median = candidate;
+<span class="kw">for</span> (<span class="kw">Map</span>.Entry&lt;<span class="kw">String</span>, Long&gt; e : stake.entrySet())
+    <span class="kw">if</span> (EconomyIndex.agrees(reports.get(e.getKey()).ind, candidate)) {
+        o.agree.put(e.getKey(), e.getValue());
+        o.agreeTotal += e.getValue();
+    }
+<span class="kw">return</span> o;</div>
+    </div>
+
+    <div class="compare-cards">
+      <div class="compare-header c4">
+        <div class="compare-header-cell">Attacker</div>
+        <div class="compare-header-cell">Before</div>
+        <div class="compare-header-cell">After</div>
+        <div class="compare-header-cell">Tested?</div>
+      </div>
+      <div class="compare-row c4">
+        <div class="compare-cell dim-label">Stake majority</div>
+        <div class="compare-cell bad">Sets any number</div>
+        <div class="compare-cell good">Can only freeze (veto)</div>
+        <div class="compare-cell">Yes: no publisher quorum, and a contradicting majority</div>
+      </div>
+      <div class="compare-row c4">
+        <div class="compare-cell dim-label">Publisher quorum</div>
+        <div class="compare-cell mid">Did not exist</div>
+        <div class="compare-cell good">Can only freeze (no ratification)</div>
+        <div class="compare-cell">Yes</div>
+      </div>
+      <div class="compare-row c4">
+        <div class="compare-cell dim-label">1 publisher + 100% stake</div>
+        <div class="compare-cell bad">Sets any number</div>
+        <div class="compare-cell good">Nothing (below quorum)</div>
+        <div class="compare-cell">Yes</div>
+      </div>
+      <div class="compare-row c4">
+        <div class="compare-cell dim-label">Publishers split</div>
+        <div class="compare-cell mid">n/a</div>
+        <div class="compare-cell good">Score frozen</div>
+        <div class="compare-cell">Yes</div>
+      </div>
+      <div class="compare-row c4">
+        <div class="compare-cell dim-label">Publisher quorum <b>and</b> stake majority collude</div>
+        <div class="compare-cell bad">Sets any number</div>
+        <div class="compare-cell bad">Sets any number</div>
+        <div class="compare-cell">This is the residual trust</div>
+      </div>
+    </div>
+
+    <p>
+      Two design decisions are worth naming. First, <strong>it fails closed</strong>: with no publishers configured, no attestation can ever be
+      valid and the score stays frozen at baseline. It never quietly falls back to the old stake-only oracle. Second, publishers are
+      a <em>role, not a bankroll</em>: their transactions may carry a zero fee, so running a publisher costs no spesmiloj.
+      Only the fixed publisher addresses can send them, and the list is hashed into the genesis block, so a node with a different list is on a
+      different network and simply will not sync.
+    </p>
+
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚖️</div>
+      <div class="callout-body">
+        <strong>This moves trust; it does not remove it</strong>
+        <p>I want to be plain about this. The two-key rule means one party can no longer set the price. It does not make the
+        price <em>true</em>. The number is now exactly as honest as the publishers, who are named parties chosen at genesis.
+        If a publisher quorum and a stake majority collude, they set the number. Publishers should read independent sources: several publishers
+        copying the same one are a single point of failure with extra steps.</p>
+      </div>
+    </div>
+
+    <p>
+      One more detail from the tests, because it shows why stake is a living thing. When I wrote the &ldquo;stake majority cannot
+      override attested data&rdquo; test, it failed. The ledger was right and my test was wrong: the two holders who disagreed with the
+      majority were the ones mining the test blocks, and their rewards grew them into the majority. Stake is dynamic. The fix was to have a
+      non-reporting wallet mine instead. A good sign for the rule, and a reminder to read the failure before blaming the code.
+    </p>
+  </section>
+
+  <!-- ═══ 6: VALUE ═══ -->
+  <section>
+    <div class="section-kicker">Making the Value Mean Something</div>
+    <h2>Steering, Not Guaranteeing</h2>
+
+    <p>
+      A score on its own is only a number. Three mechanisms make it matter, and one thing is honestly out of reach.
+    </p>
+
+    <div class="pillars-grid">
+      <div class="pillar pillar-emerald"><h3>Elastic supply</h3><p>Target supply is 21,000,000 ₷ × 100 / score. Below target, the block reward (max ₷ 50) is minted, never past the target. Above it nothing is minted and <strong>all fees are burned</strong>. A healthy world tightens supply; a sick one loosens it.</p></div>
+      <div class="pillar pillar-amber"><h3>Peg feedback</h3><p>Publishers can also sign a <strong>market quote</strong>. When a quorum agree within 5%, a market price below the peg shrinks the supply target and one above it grows it, clamped to 50%&ndash;150%.</p></div>
+      <div class="pillar pillar-blue"><h3>GBU-denominated payments</h3><p>Sign &ldquo;pay X GBU, at most M spesoj&rdquo;. The chain converts at the previous block's rate, so a merchant can price in GBU and always receive the right number of ₷. This is the layer that lets the index be <em>used</em>.</p></div>
+      <div class="pillar" style="border-left:3px solid var(--red)"><h3>The limit</h3><p>None of this can make a market outside the chain pay the peg price. The protocol steers; it cannot compel.</p></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header"><span>Params.java · the market corrects the target</span><span class="lang">Java</span></div>
+      <div class="code-body"><span class="kw">static</span> <span class="kw">long</span> adjustedTarget(<span class="kw">long</span> score, <span class="kw">long</span> market) {
+    <span class="kw">long</span> t = supplyTarget(score);
+    <span class="kw">if</span> (market &lt;= <span class="num">0</span>) <span class="kw">return</span> t;
+    <span class="kw">long</span> pct = Math.max(PEG_ADJ_MIN_PCT, Math.min(PEG_ADJ_MAX_PCT, mulDiv(market, <span class="num">100</span>, score)));
+    <span class="kw">return</span> mulDiv(t, pct, <span class="num">100</span>);
+}</div>
+    </div>
+
+    <p>
+      The honest limit is the second item on my original list: <em>the supply policy and GBU settlement steer the value but cannot force a
+      market to honour it.</em> No software can. A shop in another currency's economy will pay whatever it likes for a coin. What the code
+      can do is make the protocol react: when the market values ₷ below the peg, the chain stops minting and burns fees, which is the
+      only lever it has. It is feedback, not enforcement, and contraction is one-sided: it never confiscates a balance. The CLI says
+      so too: <code>rate</code> prints a &ldquo;protocol reference&rdquo; and reminds you that what a market pays may differ.
+    </p>
+  </section>
+
+  <!-- ═══ 7: HARDENING ═══ -->
+  <section>
+    <div class="section-kicker">Hardening</div>
+    <h2>Making a Prototype Behave Like It Might Be Attacked</h2>
+
+    <div class="tech-stack">
+      <div class="tech-pill"><span class="dot dot-green"></span>Retargeting every 20 blocks, ±1–2 bits</div>
+      <div class="tech-pill"><span class="dot dot-green"></span>PBKDF2 (200k) + AES-256-GCM wallet</div>
+      <div class="tech-pill"><span class="dot dot-blue"></span>Append-only chain, re-validated on load</div>
+      <div class="tech-pill"><span class="dot dot-blue"></span>Incremental sync, 100 blocks per batch</div>
+      <div class="tech-pill"><span class="dot dot-amber"></span>Signed challenge-response per connection</div>
+      <div class="tech-pill"><span class="dot dot-amber"></span>Token bucket, ban scores, bounded pools</div>
+      <div class="tech-pill"><span class="dot dot-violet"></span>ECDSA P-256, SHA-256</div>
+    </div>
+
+    <p>
+      The details are in the README, but three changes made while fixing the list are worth showing. <strong>Signatures are bound to the network.</strong>
+      What gets signed is the network id plus the payload, so a transaction signed for a testnet is simply invalid anywhere else:
+    </p>
+
+    <div class="code-block">
+      <div class="code-header"><span>Transaction.java</span><span class="lang">Java</span></div>
+      <div class="code-body">/** What actually gets signed: the payload bound to <span class="kw">this</span> network. */
+<span class="kw">String</span> signingText() { <span class="kw">return</span> Params.NETWORK_ID + <span class="str">"|"</span> + payload(); }</div>
+    </div>
+
+    <p>
+      The network id is a hash of every consensus setting, including the publisher list, and it is part of the genesis block.
+      <strong>Wallet files are created private from the start</strong>: the file is created with <code>rw-------</code> in the same call,
+      instead of being written first and locked down afterwards, which leaves a window under a permissive umask. And the CLI
+      <strong>will not start</strong> without an explicit <code>--i-understand-unaudited</code> flag.
+    </p>
+  </section>
+
+  <!-- ═══ 8: AUDIT ═══ -->
+  <section>
+    <div class="section-kicker">Audit</div>
+    <h2>What 119 Passing Tests Do and Do Not Mean</h2>
+
+    <p>
+      The third item on my list was <em>the code is unaudited and shouldn't hold anything of real value.</em> I cannot fix that with code,
+      and anyone who tells you their own code is audited because their own tests pass is fooling you or themselves.
+      An audit is an independent party, with adversarial intent, reading the code. What I can do is make the code easier to audit,
+      attack it myself, and refuse to let it be run casually.
+    </p>
+
+    <div class="stat-grid">
+      <div class="stat"><b>119</b><span>checks pass</span></div>
+      <div class="stat"><b>3/3</b><span>consecutive full runs</span></div>
+      <div class="stat"><b>504</b><span>lines of tests</span></div>
+      <div class="stat"><b>0</b><span>independent audits</span></div>
+    </div>
+
+    <p>
+      The suite is mostly attacks, not demonstrations: stolen signatures, a tampered amount, a signature from the wrong key, a signature not
+      bound to this network, forged blocks with overspends and reused sequence numbers, miner-chosen indicators, wrong difficulty, a
+      lighter fork trying to replace a heavier one, a corrupted and a tampered chain file, a wrong wallet password, oversized network lines,
+      garbage payloads, and a peer who keeps sending garbage until it is banned. For the oracle there is a test for every row of the table above except the last, which no test can cover: it is the case where the trust itself is betrayed.
+    </p>
+
+    <div class="callout callout-warn">
+      <div class="callout-icon">🛑</div>
+      <div class="callout-body">
+        <strong>Do not put anything of value on this</strong>
+        <p>The tests were written by the same hands as the code, so they share its blind spots. The publisher thread
+        (<code>--publish</code>) is not yet exercised by a live multi-machine run, only the ledger rules and a two-node sync are. The publisher side reads a
+        hand-edited file; nothing here pulls from the IMF or the World Bank. Formats changed, so chains from the previous version will not load.
+        Treat Speso as a reference implementation of an idea, run it on a test network, and if it ever matters, pay somebody independent to break it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 9: RUN IT ═══ -->
+  <section>
+    <div class="section-kicker">Run It</div>
+    <h2>Build, Test, and Start a Three-Publisher Test Network</h2>
+
+    <p>Plain Java 17+. If there is no <code>javac</code>, the build script falls back to the <code>jdk.compiler</code> module.</p>
+
+    <div class="code-block">
+      <div class="code-header"><span>shell</span><span class="lang">sh</span></div>
+      <div class="code-body">./build.sh
+java -cp out com.techducat.speso.SelfTest           # <span class="num">119</span> checks
+
+# every node needs the SAME publisher list (their wallet addresses); it is part of the network id
+export SPESO_PASSWORD='something <span class="kw">long</span>'
+PUB='-Dspeso.publishers=&lt;addrP1&gt;,&lt;addrP2&gt;,&lt;addrP3&gt;'
+java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span class="num">7000</span> --data nodeA --mine --publish indicators.txt
+java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span class="num">7001</span> --data nodeB --peer <span class="num">127</span>.<span class="num">0</span>.<span class="num">0</span>.<span class="num">1</span>:<span class="num">7000</span> --mine --feed indicators.txt</div>
+    </div>
+
+    <p>
+      A node prints its address when it starts; a publisher's address is what goes into <code>-Dspeso.publishers</code>. The console has
+      <code>send</code>, <code>sendgbu</code>, <code>rate</code>, <code>chain</code>, <code>status</code> and a few more. The feed file is five lines
+      (<code>gdp=3.4</code>, <code>inflation=2.6</code>, and so on) and may add <code>market=1.02</code> for the peg feedback.
+    </p>
+  </section>
+
+  <!-- ═══ 10: CONCLUSION ═══ -->
+  <section>
+    <div class="section-kicker">Conclusion</div>
+    <h2>Twenty-Four Years, and a Documentary</h2>
+
+    <p>
+      The idea was there in 1995. In 2002 I had five bullet points, one named problem and the first code. In 2026 I have about 1,800 lines of plain Java that solve the problem, a
+      price rule that cannot be set by any single party, a feedback loop that reacts to the market without pretending to command it,
+      and a list of things it does not do, kept as honest as the list of things it does.
+    </p>
+
+    <div class="pull-quote">
+      <p>Somewhere along the line, distractions and detours came along and after several pitstops and after a grand total of 24 years
+         from when I wrote the first code (the initial idea was in 1995 but I wrote no code), I finally conclude! Now it is more of a documentary than being a threat to the petro-dollar and me being identified as a threat
+         to the United States and thereby drawing attention from various goon-squad types.</p>
+      <cite>— The author</cite>
+    </div>
+
+    <p>
+      I have no illusions about what a prototype with no audit and no users can threaten. But the shape of the idea (a money
+      that no one issues, priced by the state of the whole world instead of by a single country's promise) is the one I wrote down in April 2002, and I
+      still think it is worth building properly. The code is open. Read it, run it, break it, and tell me where it fails.
+    </p>
+  </section>
+
+  <footer class="article-footer">
+    <div class="footer-left">
+      <p>SOURCE REPOSITORY</p>
+      <p style="margin-bottom: 12px; color: var(--muted-hi)">github.com/niyid/speso</p>
+      <p>PACKAGE · com.techducat.speso · UNAUDITED</p>
+    </div>
+    <a class="footer-link" href="https://github.com/niyid/speso" target="_blank" rel="noopener">↗ View on GitHub</a>
+  </footer>
+
+</div>
+</body>
+</html>

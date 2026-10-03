@@ -1,0 +1,8 @@
+out/
+*.class
+data-*/
+node*/
+wallet.dat
+node.key
+chain.dat
+peers.dat
