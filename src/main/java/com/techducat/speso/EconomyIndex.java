@@ -71,6 +71,16 @@ final class EconomyIndex {
         return true;
     }
 
+    // Wider band than TOLERANCE. A stake report outside it, in the block where it lands, contradicts the publishers
+    // clearly enough to be slashed (see Ledger.State.slash). Inside TOLERANCE it counts as agreement; between the
+    // two it is neither rewarded nor punished, so honest reporters with slightly different sources are safe.
+    static final long[] ANCHOR_TOL = {100, 100, 100, 200, 1000};
+
+    static boolean within(long[] a, long[] b, long[] tol) {
+        for (int k = 0; k < N; k++) if (Math.abs(a[k] - b[k]) > tol[k]) return false;
+        return true;
+    }
+
     static boolean agrees(long[] report, long[] consensus) {
         for (int k = 0; k < N; k++) if (Math.abs(report[k] - consensus[k]) > TOLERANCE[k]) return false;
         return true;

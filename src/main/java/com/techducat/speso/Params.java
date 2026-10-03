@@ -18,6 +18,12 @@ final class Params {
         return v == null ? d : Long.parseLong(v);
     }
 
+    // ---- network name and launch safety
+    // The network NAME ("testnet" by default: coins there are worthless) is part of NETWORK_ID below, so a
+    // transaction made for one network is invalid on every other. "mainnet" is refused unless checkLaunch passes.
+    static final String NETWORK = System.getProperty("speso.network", "testnet");
+    static final boolean MAINNET = NETWORK.equals("mainnet");
+
     // ---- money
     // The SPESO is the indivisible unit on the chain: every amount is an integer number of spesoj.
     // (Saussure made it deliberately tiny, "to avoid fractions".) People deal in the SPESMILO,
@@ -57,9 +63,32 @@ final class Params {
     // frozen (fail closed, never "stake only").
     static final List<String> PUBLISHERS = parsePublishers(System.getProperty("speso.publishers", ""));
     static final int PUBLISHER_THRESHOLD = (int) prop("speso.pubthreshold", PUBLISHERS.size() / 2 + 1);   // k of n must agree
+    // A stake reporter whose report lands in a block and contradicts the publishers' agreed value by more than
+    // EconomyIndex.ANCHOR_TOL loses this % of its balance (burned). That makes a veto by stake cost something.
+    static final int SLASH_PCT = (int) prop("speso.slashpct", 2);
     static {
-        if (!PUBLISHERS.isEmpty() && (PUBLISHER_THRESHOLD < 1 || PUBLISHER_THRESHOLD > PUBLISHERS.size()))
-            throw new IllegalStateException("speso.pubthreshold must be between 1 and the number of publishers");
+        checkPublisherConfig(PUBLISHERS.size(), PUBLISHER_THRESHOLD);
+        if (SLASH_PCT < 0 || SLASH_PCT > 20) throw new IllegalStateException("speso.slashpct must be 0..20");
+    }
+
+    /** The threshold must be a strict majority of the publisher set, and reachable. Pure, so it is testable. */
+    static void checkPublisherConfig(int publishers, int threshold) {
+        if (publishers == 0) return;
+        if (threshold * 2 <= publishers || threshold > publishers)
+            throw new IllegalStateException("speso.pubthreshold must be a strict majority of the " + publishers + " publishers");
+    }
+
+    /**
+     * Refuse to start a real-money network in an unsafe configuration. Pure, so it is testable.
+     * Mainnet needs publishers (the oracle never falls back to stake only) AND the explicit acknowledgement
+     * that this code is unaudited (Main's --i-understand-unaudited flag).
+     */
+    static void checkLaunch(String network, boolean hasPublishers, boolean ackUnaudited) {
+        if (!network.equals("mainnet")) return;
+        if (!hasPublishers)
+            throw new IllegalStateException("mainnet requires -Dspeso.publishers=... (without publishers the score is frozen)");
+        if (!ackUnaudited)
+            throw new IllegalStateException("mainnet requires --i-understand-unaudited: this code has not been audited");
     }
 
     // ---- peg feedback: the one lever that listens to the market (see adjustedTarget)
@@ -68,7 +97,7 @@ final class Params {
     static final int PEG_ADJ_MAX_PCT = 150;        //   so a lying quote quorum has bounded reach
 
     /** Identifies this network. Signed into every transaction (no cross-network replay) and into the genesis block. */
-    static final String NETWORK_ID = Crypto.sha256("speso/2|" + INIT_BITS + "|" + SUPPLY_BASE + "|" + MAX_REWARD + "|"
+    static final String NETWORK_ID = Crypto.sha256("speso/3|" + NETWORK + "|" + SLASH_PCT + "|" + INIT_BITS + "|" + SUPPLY_BASE + "|" + MAX_REWARD + "|"
             + ORACLE_WINDOW + "|" + ORACLE_QUORUM_DIV + "|" + ORACLE_SHARE_PCT + "|" + String.join(",", PUBLISHERS) + "|"
             + PUBLISHER_THRESHOLD + "|" + QUOTE_TOLERANCE_PCT + "|" + PEG_ADJ_MIN_PCT + "|" + PEG_ADJ_MAX_PCT).substring(0, 16);
 

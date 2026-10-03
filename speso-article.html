@@ -807,8 +807,8 @@
 
     <div class="stat-grid">
       <div class="stat"><b>1 ₷</b><span>= 1,000 spesoj</span></div>
-      <div class="stat"><b>10</b><span>main source files</span></div>
-      <div class="stat"><b>1,828</b><span>lines of main code</span></div>
+      <div class="stat"><b>16</b><span>main source files</span></div>
+      <div class="stat"><b>3,077</b><span>lines of main code</span></div>
       <div class="stat"><b>0</b><span>dependencies</span></div>
     </div>
   </section>
@@ -947,7 +947,7 @@ tx = fromPub|kind|to|amount|aux|fee|seq|data|sig</div>
       The change is a rule that says neither group may set the number alone. <strong>Key 1</strong> is a fixed set of named
       <em>publishers</em> who sign attestations of the data; the candidate value is their median, and it only counts if enough of them
       agree (a strict majority by default). <strong>Key 2</strong> is the stake: holders still publish reports, but now their median can
-      only <em>ratify or veto</em> the publishers' value. The price moves when both keys agree, and otherwise it freezes.
+      only <em>ratify or veto</em> the publishers' value. The price moves when both keys agree, and otherwise it freezes. A veto is not free: a stake report that lands in a block and clearly contradicts the publishers' value burns 2% of the reporter's balance, and when the publishers have no consensus nobody is slashed, so a stake majority can never punish the minority.
     </p>
 
     <div class="code-block">
@@ -989,8 +989,8 @@ o.median = candidate;
       <div class="compare-row c4">
         <div class="compare-cell dim-label">Stake majority</div>
         <div class="compare-cell bad">Sets any number</div>
-        <div class="compare-cell good">Can only freeze (veto)</div>
-        <div class="compare-cell">Yes: no publisher quorum, and a contradicting majority</div>
+        <div class="compare-cell good">Can only freeze (veto), at 2% per contradicting reporter</div>
+        <div class="compare-cell">Yes: no publisher quorum, and a contradicting majority (including the slash)</div>
       </div>
       <div class="compare-row c4">
         <div class="compare-cell dim-label">Publisher quorum</div>
@@ -1107,17 +1107,17 @@ o.median = candidate;
     </div>
 
     <p>
-      The network id is a hash of every consensus setting, including the publisher list, and it is part of the genesis block.
+      The network id is a hash of every consensus setting, including the network name and the publisher list, and it is part of the genesis block.
       <strong>Wallet files are created private from the start</strong>: the file is created with <code>rw-------</code> in the same call,
       instead of being written first and locked down afterwards, which leaves a window under a permissive umask. And the CLI
-      <strong>will not start</strong> without an explicit <code>--i-understand-unaudited</code> flag.
+      <strong>will not start</strong> without an explicit <code>--i-understand-unaudited</code> flag, and on <code>-Dspeso.network=mainnet</code> it also refuses to start without a publisher list.
     </p>
   </section>
 
   <!-- ═══ 8: AUDIT ═══ -->
   <section>
     <div class="section-kicker">Audit</div>
-    <h2>What 119 Passing Tests Do and Do Not Mean</h2>
+    <h2>What 224 Passing Tests Do and Do Not Mean</h2>
 
     <p>
       The third item on my list was <em>the code is unaudited and shouldn't hold anything of real value.</em> I cannot fix that with code,
@@ -1127,9 +1127,9 @@ o.median = candidate;
     </p>
 
     <div class="stat-grid">
-      <div class="stat"><b>119</b><span>checks pass</span></div>
-      <div class="stat"><b>3/3</b><span>consecutive full runs</span></div>
-      <div class="stat"><b>504</b><span>lines of tests</span></div>
+      <div class="stat"><b>224</b><span>checks pass</span></div>
+      <div class="stat"><b>3</b><span>suites, each in its own JVM</span></div>
+      <div class="stat"><b>1,064</b><span>lines of tests</span></div>
       <div class="stat"><b>0</b><span>independent audits</span></div>
     </div>
 
@@ -1145,8 +1145,8 @@ o.median = candidate;
       <div class="callout-body">
         <strong>Do not put anything of value on this</strong>
         <p>The tests were written by the same hands as the code, so they share its blind spots. The publisher thread
-        (<code>--publish</code>) is not yet exercised by a live multi-machine run, only the ledger rules and a two-node sync are. The publisher side reads a
-        hand-edited file; nothing here pulls from the IMF or the World Bank. Formats changed, so chains from the previous version will not load.
+        (<code>--publish</code>) has run live on one machine (one publisher, a miner and thin wallets in separate processes), but not across several machines with several real publishers.
+        The automatic feed (<code>--auto-feed</code>) is tested against local fixtures only: the real World Bank and IMF endpoints were never contacted. Formats changed, so chains from the previous version will not load.
         Treat Speso as a reference implementation of an idea, run it on a test network, and if it ever matters, pay somebody independent to break it.</p>
       </div>
     </div>
@@ -1162,21 +1162,74 @@ o.median = candidate;
     <div class="code-block">
       <div class="code-header"><span>shell</span><span class="lang">sh</span></div>
       <div class="code-body">./build.sh
-java -cp out com.techducat.speso.SelfTest           # <span class="num">119</span> checks
+./test.sh                                           # <span class="num">224</span> checks, three JVMs
 
 # every node needs the SAME publisher list (their wallet addresses); it is part of the network id
 export SPESO_PASSWORD='something <span class="kw">long</span>'
 PUB='-Dspeso.publishers=&lt;addrP1&gt;,&lt;addrP2&gt;,&lt;addrP3&gt;'
-java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span class="num">7000</span> --data nodeA --mine --publish indicators.txt
+java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span class="num">7000</span> --data nodeA --mine --rpc <span class="num">7100</span> --publish indicators.txt
 java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span class="num">7001</span> --data nodeB --peer <span class="num">127</span>.<span class="num">0</span>.<span class="num">0</span>.<span class="num">1</span>:<span class="num">7000</span> --mine --feed indicators.txt</div>
     </div>
 
     <p>
       A node prints its address when it starts; a publisher's address is what goes into <code>-Dspeso.publishers</code>. The console has
-      <code>send</code>, <code>sendgbu</code>, <code>rate</code>, <code>chain</code>, <code>status</code> and a few more. The feed file is five lines
-      (<code>gdp=3.4</code>, <code>inflation=2.6</code>, and so on) and may add <code>market=1.02</code> for the peg feedback.
+      <code>send</code>, <code>sendgbu</code>, <code>quote</code>, <code>rate</code>, <code>publishers</code>, <code>chain</code>, <code>status</code> and a few more. The feed file is five lines
+      (<code>gdp=3.4</code>, <code>inflation=2.6</code>, and so on) and may add <code>market=1.02</code> for the peg feedback. With <code>--rpc 7100</code> a node serves a small JSON API, and the thin wallet <code>Cli</code> (no chain, no mining) signs locally against it: <code>Cli --wallet alice.dat send &lt;addr&gt; 5</code>. <code>--auto-feed</code> makes a node fetch the World Bank and IMF data itself and publish it.
     </p>
   </section>
+
+  <!-- usability:start -->
+  <section class="usability">
+    <style>
+      .usability video{width:100%;max-width:960px;height:auto;border-radius:8px;display:block;margin:1rem 0}
+      .usability .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:1rem}
+      .usability figure{margin:0}
+      .usability figure img{width:100%;height:auto;border-radius:6px;border:1px solid rgba(128,128,128,.35)}
+      .usability figcaption{font-size:.85em;margin-top:.3rem}
+    </style>
+    <div class="section-kicker">Usability Test</div>
+    <h2>A First Run, Screen by Screen</h2>
+    <p>Tested with JDK 21 using <code>build.sh</code> on this code: all three test suites pass (224 checks). One testnet node (a single publisher with threshold 1, which also reports and mines) and thin wallets in separate processes, with <code>-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10</code>. Commands are shown as <code>speso-wallet</code> for <code>java -cp out com.techducat.speso.Cli</code>. Not exercised: several publishers on several machines, the live World Bank and IMF endpoints, and the Gradle build.</p>
+    <video controls preload="metadata" poster="usability/screens/00-title.png">
+      <source src="usability/speso-usability-test.mp4" type="video/mp4">
+      Your browser does not play MP4. <a href="usability/speso-usability-test.mp4">Download the video</a>.
+    </video>
+    <h3>What worked</h3><ul><li>The whole flow works: create a wallet, fund it, send, price a payment in GBU, pay in GBU, track a payment from pending to confirmed.</li><li>A publisher's market quote changes the supply target as designed (market 0.90 against a rate of 1.116 cuts the target from about Sm 18.8M to Sm 15.1M).</li><li>The launch guards work: <code>mainnet</code> without publishers, and any launch without <code>--i-understand-unaudited</code>, are refused.</li><li>Wallet creation warns plainly that there is no recovery; errors for fractions, a wrong password and a missing wallet say exactly what is wrong.</li></ul>
+    <h3>Found and fixed during the test</h3><ul><li>A thin wallet could not pay on a network with publishers: its signature was bound to a network id that its own process could not compute. It now signs for the id its node reports. The in-process tests could not see this; only the run across separate processes did.</li><li>An unreachable node printed <code>error: null</code>. It now names the URL it tried and how to change it.</li><li><code>missing argument</code> now names the command and shows its usage; the no-argument usage is one aligned line per command.</li><li>An overspend rejection listed four possible causes. It now gives the one that applies, with the amounts.</li><li><code>status</code> dumped raw fields (<code>score: 10000</code>). It now prints readable lines.</li><li>The node console quit when stdin closed, so it could not run under nohup or systemd. It now keeps running.</li><li>A bad address now says what an address is; a refused launch now exits non-zero.</li></ul>
+    <h3>Still rough</h3><ul><li>The oracle status line is still long and jargon-heavy for a first-time user.</li><li>Terminals that cannot show the spesmilo sign print <code>Sm</code>.</li><li>There is no launcher script: the commands are <code>java -cp out com.techducat.speso.Cli</code> and <code>...Main</code>.</li></ul>
+    <details><summary>All 28 screens</summary>
+    <div class="grid">
+<figure><a href="usability/screens/01-usage.png"><img loading="lazy" src="usability/screens/01-usage.png" alt="Discoverability: No arguments: every command on its own line, with what it does."></a><figcaption><b>1. Discoverability.</b> No arguments: every command on its own line, with what it does.</figcaption></figure>
+<figure><a href="usability/screens/02-new.png"><img loading="lazy" src="usability/screens/02-new.png" alt="Create a wallet: Wallet creation warns plainly that there is no recovery."></a><figcaption><b>2. Create a wallet.</b> Wallet creation warns plainly that there is no recovery.</figcaption></figure>
+<figure><a href="usability/screens/03-me.png"><img loading="lazy" src="usability/screens/03-me.png" alt="Get your address: Your address needs no password."></a><figcaption><b>3. Get your address.</b> Your address needs no password.</figcaption></figure>
+<figure><a href="usability/screens/04-status.png"><img loading="lazy" src="usability/screens/04-status.png" alt="Check the node: status: network, height, rate, supply and oracle, in readable units."></a><figcaption><b>4. Check the node.</b> status: network, height, rate, supply and oracle, in readable units.</figcaption></figure>
+<figure><a href="usability/screens/05-rate.png"><img loading="lazy" src="usability/screens/05-rate.png" alt="Read the rate: rate: score 111.6 means 1 Sm = 1.1160 GBU, with the five indicators."></a><figcaption><b>5. Read the rate.</b> rate: score 111.6 means 1 Sm = 1.1160 GBU, with the five indicators.</figcaption></figure>
+<figure><a href="usability/screens/06-publishers.png"><img loading="lazy" src="usability/screens/06-publishers.png" alt="Oracle publishers: publishers: the registered publisher set and whether each is live."></a><figcaption><b>6. Oracle publishers.</b> publishers: the registered publisher set and whether each is live.</figcaption></figure>
+<figure><a href="usability/screens/07-balance_alice_empty.png"><img loading="lazy" src="usability/screens/07-balance_alice_empty.png" alt="Check balance: A new wallet starts at zero."></a><figcaption><b>7. Check balance.</b> A new wallet starts at zero.</figcaption></figure>
+<figure><a href="usability/screens/08-quote.png"><img loading="lazy" src="usability/screens/08-quote.png" alt="Price in GBU: quote: cost now and the worst case after 1, 3 and 6 blocks."></a><figcaption><b>8. Price in GBU.</b> quote: cost now and the worst case after 1, 3 and 6 blocks.</figcaption></figure>
+<figure><a href="usability/screens/09-send.png"><img loading="lazy" src="usability/screens/09-send.png" alt="Send payment: Funding Alice from the node's wallet."></a><figcaption><b>9. Send payment.</b> Funding Alice from the node's wallet.</figcaption></figure>
+<figure><a href="usability/screens/10-tx_confirmed.png"><img loading="lazy" src="usability/screens/10-tx_confirmed.png" alt="Track it: tx: confirmed, with height and confirmations."></a><figcaption><b>10. Track it.</b> tx: confirmed, with height and confirmations.</figcaption></figure>
+<figure><a href="usability/screens/11-balance_alice.png"><img loading="lazy" src="usability/screens/11-balance_alice.png" alt="Balance updated: Alice now holds Sm 5."></a><figcaption><b>11. Balance updated.</b> Alice now holds Sm 5.</figcaption></figure>
+<figure><a href="usability/screens/12-sendgbu_auto.png"><img loading="lazy" src="usability/screens/12-sendgbu_auto.png" alt="GBU payment: sendgbu with the 'auto' ceiling: a safe price limit chosen from the 3-block worst case."></a><figcaption><b>12. GBU payment.</b> sendgbu with the 'auto' ceiling: a safe price limit chosen from the 3-block worst case.</figcaption></figure>
+<figure><a href="usability/screens/13-balance_bob.png"><img loading="lazy" src="usability/screens/13-balance_bob.png" alt="Receiver balance: Bob received 2 GBU, which at the block's rate is Sm 1.793."></a><figcaption><b>13. Receiver balance.</b> Bob received 2 GBU, which at the block's rate is Sm 1.793.</figcaption></figure>
+<figure><a href="usability/screens/14-send_while_paused.png"><img loading="lazy" src="usability/screens/14-send_while_paused.png" alt="Pending state: With mining paused, a payment waits in the mempool."></a><figcaption><b>14. Pending state.</b> With mining paused, a payment waits in the mempool.</figcaption></figure>
+<figure><a href="usability/screens/15-tx_pending.png"><img loading="lazy" src="usability/screens/15-tx_pending.png" alt="Pending state: tx reports 'pending'."></a><figcaption><b>15. Pending state.</b> tx reports 'pending'.</figcaption></figure>
+<figure><a href="usability/screens/16-status_mempool.png"><img loading="lazy" src="usability/screens/16-status_mempool.png" alt="Pending state: status shows mempool 1 and mining no."></a><figcaption><b>16. Pending state.</b> status shows mempool 1 and mining no.</figcaption></figure>
+<figure><a href="usability/screens/17-tx_confirmed_after.png"><img loading="lazy" src="usability/screens/17-tx_confirmed_after.png" alt="Confirmed: Mining resumed: the same payment confirms."></a><figcaption><b>17. Confirmed.</b> Mining resumed: the same payment confirms.</figcaption></figure>
+<figure><a href="usability/screens/18-rate_market.png"><img loading="lazy" src="usability/screens/18-rate_market.png" alt="Peg feedback: A publisher adds market=0.90: the supply target falls from about Sm 18.8M to Sm 15.1M."></a><figcaption><b>18. Peg feedback.</b> A publisher adds market=0.90: the supply target falls from about Sm 18.8M to Sm 15.1M.</figcaption></figure>
+<figure><a href="usability/screens/19-node_console.png"><img loading="lazy" src="usability/screens/19-node_console.png" alt="Node console: The node's own console: publishers, quote, chain, balance."></a><figcaption><b>19. Node console.</b> The node's own console: publishers, quote, chain, balance.</figcaption></figure>
+<figure><a href="usability/screens/20-err_overspend.png"><img loading="lazy" src="usability/screens/20-err_overspend.png" alt="Error: overspend: Rejected with the specific cause and the amounts."></a><figcaption><b>20. Error: overspend.</b> Rejected with the specific cause and the amounts.</figcaption></figure>
+<figure><a href="usability/screens/21-err_badaddr.png"><img loading="lazy" src="usability/screens/21-err_badaddr.png" alt="Error: bad address: Says what an address is and how to get yours."></a><figcaption><b>21. Error: bad address.</b> Says what an address is and how to get yours.</figcaption></figure>
+<figure><a href="usability/screens/22-err_fraction.png"><img loading="lazy" src="usability/screens/22-err_fraction.png" alt="Error: fraction: Says what is wrong and the limit."></a><figcaption><b>22. Error: fraction.</b> Says what is wrong and the limit.</figcaption></figure>
+<figure><a href="usability/screens/23-err_missing.png"><img loading="lazy" src="usability/screens/23-err_missing.png" alt="Error: missing args: Names the command and shows its usage."></a><figcaption><b>23. Error: missing args.</b> Names the command and shows its usage.</figcaption></figure>
+<figure><a href="usability/screens/24-err_nowallet.png"><img loading="lazy" src="usability/screens/24-err_nowallet.png" alt="Error: no wallet: Clear."></a><figcaption><b>24. Error: no wallet.</b> Clear.</figcaption></figure>
+<figure><a href="usability/screens/25-err_wrongpw.png"><img loading="lazy" src="usability/screens/25-err_wrongpw.png" alt="Error: wrong password: Clear."></a><figcaption><b>25. Error: wrong password.</b> Clear.</figcaption></figure>
+<figure><a href="usability/screens/26-err_nonode.png"><img loading="lazy" src="usability/screens/26-err_nonode.png" alt="Error: node down: Says which URL it tried and how to point it elsewhere."></a><figcaption><b>26. Error: node down.</b> Says which URL it tried and how to point it elsewhere.</figcaption></figure>
+<figure><a href="usability/screens/27-launch_guard.png"><img loading="lazy" src="usability/screens/27-launch_guard.png" alt="Launch guard: mainnet is refused without publishers, with a non-zero exit code."></a><figcaption><b>27. Launch guard.</b> mainnet is refused without publishers, with a non-zero exit code.</figcaption></figure>
+<figure><a href="usability/screens/28-launch_no_ack.png"><img loading="lazy" src="usability/screens/28-launch_no_ack.png" alt="Launch guard: Without --i-understand-unaudited the node refuses to start (exit 1)."></a><figcaption><b>28. Launch guard.</b> Without --i-understand-unaudited the node refuses to start (exit 1).</figcaption></figure>
+    </div></details>
+  </section>
+  <!-- usability:end -->
 
   <!-- ═══ 10: CONCLUSION ═══ -->
   <section>
@@ -1184,7 +1237,7 @@ java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span
     <h2>Twenty-Four Years, and a Documentary</h2>
 
     <p>
-      The idea was there in 1995. In 2002 I had five bullet points, one named problem and the first code. In 2026 I have about 1,800 lines of plain Java that solve the problem, a
+      The idea was there in 1995. In 2002 I had five bullet points, one named problem and the first code. In 2026 I have about 3,000 lines of plain Java that solve the problem, a
       price rule that cannot be set by any single party, a feedback loop that reacts to the market without pretending to command it,
       and a list of things it does not do, kept as honest as the list of things it does.
     </p>
@@ -1213,52 +1266,6 @@ java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span
   </footer>
 
 </div>
-<!-- usability:start -->
-<section class="usability">
-<style>
-.usability video{width:100%;max-width:960px;height:auto;border-radius:8px;display:block;margin:1rem 0}
-.usability .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:1rem}
-.usability figure{margin:0}
-.usability figure img{width:100%;height:auto;border-radius:6px;border:1px solid rgba(128,128,128,.35)}
-.usability figcaption{font-size:.85em;margin-top:.3rem}
-</style>
-<h2>Usability test: a first run, screen by screen</h2>
-<p>Tested with JDK 21 using <code>build.sh</code>; the three test suites pass. One mining node on testnet plus the thin wallet (<code>Cli</code>), with <code>-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10</code>. The Gradle build and the live World Bank / IMF feed were not exercised.</p>
-<video controls preload="metadata" poster="usability/screens/00-title.png">
-<source src="usability/speso-usability-test.mp4" type="video/mp4">
-Your browser does not play MP4. <a href="usability/speso-usability-test.mp4">Download the video</a>.
-</video>
-<h3>What worked</h3><ul><li>The whole flow worked first time: create wallet, fund, send, GBU quote, GBU payment, confirmation.</li><li>Wallet creation warns plainly that there is no recovery.</li><li>Errors for fractions, wrong password and a missing wallet say exactly what is wrong.</li></ul>
-<h3>Rough edges</h3><ul><li>Node unreachable prints <code>error: null</code>, with no hint to check the RPC URL.</li><li><code>missing argument</code> does not say which argument, or show that command's usage.</li><li>An overspend rejection lists four possible causes in one string.</li><li><code>status</code> mixes raw units (<code>score: 10000</code>) with formatted values; the oracle line is long and jargon-heavy.</li><li>The node console exits when stdin closes, so running it in the background needs a held-open stdin.</li></ul>
-<details><summary>All 24 screens</summary>
-<div class="grid">
-<figure><a href="usability/screens/01-usage.png"><img loading="lazy" src="usability/screens/01-usage.png" alt="Discoverability: Running the wallet with no arguments prints one dense usage line."></a><figcaption><b>1. Discoverability.</b> Running the wallet with no arguments prints one dense usage line.</figcaption></figure>
-<figure><a href="usability/screens/02-new.png"><img loading="lazy" src="usability/screens/02-new.png" alt="Create a wallet: Wallet creation warns plainly that there is no recovery."></a><figcaption><b>2. Create a wallet.</b> Wallet creation warns plainly that there is no recovery.</figcaption></figure>
-<figure><a href="usability/screens/03-me.png"><img loading="lazy" src="usability/screens/03-me.png" alt="Get your address: Your address needs no password."></a><figcaption><b>3. Get your address.</b> Your address needs no password.</figcaption></figure>
-<figure><a href="usability/screens/04-status.png"><img loading="lazy" src="usability/screens/04-status.png" alt="Check the node: status prints raw field names and units (score: 10000, supply: 100000)."></a><figcaption><b>4. Check the node.</b> status prints raw field names and units (score: 10000, supply: 100000).</figcaption></figure>
-<figure><a href="usability/screens/05-rate.png"><img loading="lazy" src="usability/screens/05-rate.png" alt="Read the rate: rate shows 1 Sm = 1.0000 GBU, the five indicators and the oracle state."></a><figcaption><b>5. Read the rate.</b> rate shows 1 Sm = 1.0000 GBU, the five indicators and the oracle state.</figcaption></figure>
-<figure><a href="usability/screens/06-balance_alice_empty.png"><img loading="lazy" src="usability/screens/06-balance_alice_empty.png" alt="Check balance: A new wallet starts at zero."></a><figcaption><b>6. Check balance.</b> A new wallet starts at zero.</figcaption></figure>
-<figure><a href="usability/screens/07-quote.png"><img loading="lazy" src="usability/screens/07-quote.png" alt="Price in GBU: quote shows the cost now and the worst case after 1, 3 and 6 blocks."></a><figcaption><b>7. Price in GBU.</b> quote shows the cost now and the worst case after 1, 3 and 6 blocks.</figcaption></figure>
-<figure><a href="usability/screens/08-send.png"><img loading="lazy" src="usability/screens/08-send.png" alt="Send payment: Funding Alice from the miner wallet."></a><figcaption><b>8. Send payment.</b> Funding Alice from the miner wallet.</figcaption></figure>
-<figure><a href="usability/screens/09-tx_short_id.png"><img loading="lazy" src="usability/screens/09-tx_short_id.png" alt="Track it: tx reports the funding payment confirmed, with height and confirmations."></a><figcaption><b>9. Track it.</b> tx reports the funding payment confirmed, with height and confirmations.</figcaption></figure>
-<figure><a href="usability/screens/10-balance_alice.png"><img loading="lazy" src="usability/screens/10-balance_alice.png" alt="Balance updated: Alice now holds Sm 5."></a><figcaption><b>10. Balance updated.</b> Alice now holds Sm 5.</figcaption></figure>
-<figure><a href="usability/screens/11-sendgbu_auto.png"><img loading="lazy" src="usability/screens/11-sendgbu_auto.png" alt="GBU payment: sendgbu with the 'auto' ceiling guards against a falling score."></a><figcaption><b>11. GBU payment.</b> sendgbu with the 'auto' ceiling guards against a falling score.</figcaption></figure>
-<figure><a href="usability/screens/12-balance_bob.png"><img loading="lazy" src="usability/screens/12-balance_bob.png" alt="Receiver balance: Bob received Sm 2."></a><figcaption><b>12. Receiver balance.</b> Bob received Sm 2.</figcaption></figure>
-<figure><a href="usability/screens/13-send_while_paused.png"><img loading="lazy" src="usability/screens/13-send_while_paused.png" alt="Pending state: With mining paused, a payment waits in the mempool."></a><figcaption><b>13. Pending state.</b> With mining paused, a payment waits in the mempool.</figcaption></figure>
-<figure><a href="usability/screens/14-tx_pending.png"><img loading="lazy" src="usability/screens/14-tx_pending.png" alt="Pending state: tx reports 'pending'."></a><figcaption><b>14. Pending state.</b> tx reports 'pending'.</figcaption></figure>
-<figure><a href="usability/screens/15-status_mempool.png"><img loading="lazy" src="usability/screens/15-status_mempool.png" alt="Pending state: status shows mempool: 1."></a><figcaption><b>15. Pending state.</b> status shows mempool: 1.</figcaption></figure>
-<figure><a href="usability/screens/16-tx_confirmed.png"><img loading="lazy" src="usability/screens/16-tx_confirmed.png" alt="Confirmed: Mining resumed: the same payment confirms at the next block."></a><figcaption><b>16. Confirmed.</b> Mining resumed: the same payment confirms at the next block.</figcaption></figure>
-<figure><a href="usability/screens/17-node_console.png"><img loading="lazy" src="usability/screens/17-node_console.png" alt="Node console: The node's own console: help, chain, balance."></a><figcaption><b>17. Node console.</b> The node's own console: help, chain, balance.</figcaption></figure>
-<figure><a href="usability/screens/18-err_overspend.png"><img loading="lazy" src="usability/screens/18-err_overspend.png" alt="Error: overspend: Rejected, but the message lists four possible causes."></a><figcaption><b>18. Error: overspend.</b> Rejected, but the message lists four possible causes.</figcaption></figure>
-<figure><a href="usability/screens/19-err_badaddr.png"><img loading="lazy" src="usability/screens/19-err_badaddr.png" alt="Error: bad address: Short and clear, though it does not say what a valid address looks like."></a><figcaption><b>19. Error: bad address.</b> Short and clear, though it does not say what a valid address looks like.</figcaption></figure>
-<figure><a href="usability/screens/20-err_fraction.png"><img loading="lazy" src="usability/screens/20-err_fraction.png" alt="Error: fraction: The best message in the tool: it says what is wrong and the limit."></a><figcaption><b>20. Error: fraction.</b> The best message in the tool: it says what is wrong and the limit.</figcaption></figure>
-<figure><a href="usability/screens/21-err_missing.png"><img loading="lazy" src="usability/screens/21-err_missing.png" alt="Error: missing args: 'missing argument' does not say which one, or show usage."></a><figcaption><b>21. Error: missing args.</b> 'missing argument' does not say which one, or show usage.</figcaption></figure>
-<figure><a href="usability/screens/22-err_nowallet.png"><img loading="lazy" src="usability/screens/22-err_nowallet.png" alt="Error: no wallet: Clear."></a><figcaption><b>22. Error: no wallet.</b> Clear.</figcaption></figure>
-<figure><a href="usability/screens/23-err_wrongpw.png"><img loading="lazy" src="usability/screens/23-err_wrongpw.png" alt="Error: wrong password: Clear."></a><figcaption><b>23. Error: wrong password.</b> Clear.</figcaption></figure>
-<figure><a href="usability/screens/24-err_nonode.png"><img loading="lazy" src="usability/screens/24-err_nonode.png" alt="Error: node down: 'error: null' is the one genuinely unhelpful message."></a><figcaption><b>24. Error: node down.</b> 'error: null' is the one genuinely unhelpful message.</figcaption></figure>
-</div></details>
-</section>
-<!-- usability:end -->
 
 </body>
 </html>

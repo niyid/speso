@@ -104,9 +104,15 @@ final class Wallet {
 
     // ---------------------------------------------------------------- building transactions
 
+    /**
+     * The network id signatures are bound to. A full node signs for its own (Params.NETWORK_ID). A thin wallet runs in a
+     * separate JVM that does not know the publisher list the id is derived from, so Cli sets this to the id its node reports.
+     */
+    volatile String networkId;       // null = this JVM's own Params.NETWORK_ID (resolved lazily: tests build wallets before Params is configured)
+
     private Transaction sign(char kind, String to, long amount, long aux, long fee, long seq, String data) {
         Transaction t = new Transaction(pubB64, kind, to, amount, aux, fee, seq, data, null);
-        return t.withSig(Crypto.sign(priv, t.signingText()));
+        return t.withSig(Crypto.sign(priv, (networkId != null ? t.signingText(networkId) : t.signingText())));
     }
 
     /** Pay `amount` spesoj. */
@@ -117,6 +123,16 @@ final class Wallet {
     /** Pay `gbuAmount` thousandths of a GBU, converted to spesoj at the chain's rate, costing at most `maxSpesoj`. */
     Transaction payGbu(String to, long gbuAmount, long maxSpesoj, long fee, long seq) {
         return sign(Transaction.PAY_GBU, to, gbuAmount, maxSpesoj, fee, seq, "-");
+    }
+
+    /** The address stored in a wallet file, WITHOUT decrypting it (the public key is stored in clear). Null if absent/unreadable. */
+    static String addressOf(String file) {
+        try {
+            List<String> l = Files.readAllLines(Paths.get(file), StandardCharsets.UTF_8);
+            if (l.isEmpty()) return null;
+            String pub = l.get(0).equals(PLAIN) ? l.get(1) : l.get(0).equals(ENC) ? l.get(4) : null;
+            return pub == null ? null : Crypto.address(pub);
+        } catch (Exception e) { return null; }
     }
 
     /** Publish my reading of the economy (indicators in hundredths). Weighted by my balance; ratifies or vetoes, never sets. */

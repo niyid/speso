@@ -1,0 +1,57 @@
+// Build: gradle build          (compiles, runs the three test suites)
+// Run:   gradle installDist    then build/install/speso/bin/{speso,speso-wallet,speso-feed}
+//
+// No dependencies: everything is the JDK (java.net.http, jdk.httpserver). Needs JDK 17+.
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.techducat'
+version = '0.2.0'
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+}
+
+repositories { mavenCentral() }
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+application {
+    mainClass = 'com.techducat.speso.Main'          // the node (also a console wallet)
+}
+
+// The tests are plain main() programs. Params are static, so each suite needs its own JVM.
+['SelfTest', 'AnchoredTest', 'ToolsTest'].each { name ->
+    tasks.register("run${name}", JavaExec) {
+        group = 'verification'
+        description = "Runs com.techducat.speso.${name} in its own JVM"
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = "com.techducat.speso.${name}"
+    }
+}
+
+tasks.named('check') { dependsOn 'runSelfTest', 'runAnchoredTest', 'runToolsTest' }
+// the stock 'test' task has no JUnit tests to find
+tasks.named('test') { enabled = false }
+
+// Two more launchers next to the node: the thin wallet and the one-shot feed tool.
+def extraScripts = [
+    [name: 'speso-wallet', cls: 'com.techducat.speso.Cli'],
+    [name: 'speso-feed',   cls: 'com.techducat.speso.Feed'],
+]
+extraScripts.each { s ->
+    def t = tasks.register("${s.name}Scripts", CreateStartScripts) {
+        applicationName = s.name
+        mainClass = s.cls
+        outputDir = layout.buildDirectory.dir("scripts-${s.name}").get().asFile
+        classpath = startScripts.get().classpath
+    }
+    distributions.main.contents {
+        from(t) { into 'bin' }
+    }
+}

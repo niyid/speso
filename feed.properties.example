@@ -1,0 +1,29 @@
+# Sample config for:  speso --auto-feed --feed-config feed.properties     (or:  speso-feed --config feed.properties)
+# Everything here is optional; these are the defaults.
+
+# Endpoints (no API key needed for either)
+wb.base=https://api.worldbank.org/v2
+imf.base=https://api.imf.org/external/sdmx/3.0
+imf.world=G001
+
+# Newest data accepted, in years behind "last year". Older data is refused.
+maxlag=3
+
+# Series per indicator. Leave a value empty to disable that source for the indicator
+# (an indicator with ONE source is published from that source alone, with a note).
+gdp.wb=NY.GDP.MKTP.KD.ZG
+gdp.imf=NGDP_RPCH
+gdp.tol=1.00
+inflation.wb=FP.CPI.TOTL.ZG
+inflation.imf=PCPIPCH
+inflation.tol=2.00
+unemployment.wb=SL.UEM.TOTL.ZS
+unemployment.imf=
+# Verify these two against a live  speso-feed --probe  run before relying on them:
+trade.wb=NE.EXP.GNFS.KD.ZG
+trade.imf=TX_RPCH
+trade.tol=3.00
+
+# "stress" has no World Bank / IMF series. 'baseline' contributes nothing to the score;
+# a number (0-100) is a manual input that EVERY publisher must agree on.
+stress=baseline

@@ -188,7 +188,9 @@ public final class SelfTest {
         check("both keys agree: score moves toward boom, not bust", s1 > 10_000 && s1 <= 10_200);
         check("move limited to 2% per block", EconomyIndex.withinBand(10_000, s1));
         check("ratifying reporter shares the reward bonus", lo.balance(w[0].address) > aBefore);
-        check("dissenting reporter gets no bonus (only pays its fee)", lo.balance(w[4].address) == eBefore - FEE);
+        long eAfterFee = eBefore - FEE;
+        check("dissenting reporter gets no bonus and is slashed for contradicting the publishers",
+                lo.balance(w[4].address) == eAfterFee - eAfterFee * Params.SLASH_PCT / 100);
         check("publishers paid no fee: a role, not a bankroll", lo.balance(pubs[0].address) == 0);
         int guard = 0;
         long lastScore = s1;
@@ -436,7 +438,7 @@ public final class SelfTest {
             String chal = Node.readLine(in, 1024);
             if (chal == null) { out.add("<closed>"); return out; }
             if (id != null)
-                w.println("AUTH " + id.pubB64 + " " + Crypto.sign(id.priv, "speso-auth|" + chal.substring(5)) + " 9999");
+                w.println("AUTH " + id.pubB64 + " " + Crypto.sign(id.priv, Node.authMessage(chal.substring(5))) + " 9999");
             else
                 w.println("HELLO i am not authenticating");
             w.println(request);

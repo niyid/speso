@@ -63,6 +63,7 @@ final class Ledger {
         int reporters;
         int pubLive, pubAgree;                             // live publisher attestations, and how many agree
         long market;                                       // attested market value of one spesmilo (10000 == 1 GBU), 0 = none
+        long[] anchor;                                     // the publishers' agreed value, set even when stake vetoes it (null if none)
     }
 
     /** Balances, next-expected sequence numbers, live oracle reports, attestations, quotes and total supply. Copyable. */
@@ -188,6 +189,7 @@ final class Ledger {
                 for (long[] p : pubs) if (EconomyIndex.agrees(p, med)) o.pubAgree++;
                 if (o.pubAgree >= Params.PUBLISHER_THRESHOLD) candidate = med;
             }
+            o.anchor = candidate;
             if (candidate == null) {
                 o.why = pubs.size() < Params.PUBLISHER_THRESHOLD ? "publishers below quorum" : "publishers disagree";
                 return o;
@@ -203,6 +205,23 @@ final class Ledger {
                     o.agreeTotal += e.getValue();
                 }
             return o;
+        }
+
+        /**
+         * Slashing: a stake reporter whose report INCLUDED IN THIS BLOCK contradicts the publishers' agreed value
+         * by more than EconomyIndex.ANCHOR_TOL loses SLASH_PCT of its balance (burned). This is what makes a stake
+         * veto cost something. Judged only in the block where the report lands, so an honest holder is never
+         * punished later for a stale report. No publisher consensus => nobody is slashed (a stake majority must
+         * never be able to slash the minority).
+         */
+        void slash(Oracle o, int height) {
+            if (o.anchor == null || Params.SLASH_PCT == 0) return;
+            for (Map.Entry<String, Report> e : reports.entrySet()) {
+                Report r = e.getValue();
+                if (r.height != height || EconomyIndex.within(r.ind, o.anchor, EconomyIndex.ANCHOR_TOL)) continue;
+                long b = bal.getOrDefault(e.getKey(), 0L), cut = b * Params.SLASH_PCT / 100;
+                if (cut > 0) { bal.put(e.getKey(), b - cut); supply -= cut; }
+            }
         }
 
         /** Indicators a block at this point MUST carry. */
@@ -261,16 +280,27 @@ final class Ledger {
         return Math.max(Params.MIN_BITS, Math.min(Params.MAX_BITS, bits));
     }
 
+    /** Median timestamp of the last (up to) 11 blocks ending at `tip`. A new block must be strictly later. */
+    static long medianTimePast(Block tip) {
+        long[] t = new long[11];
+        int n = 0;
+        for (Block x = tip; x != null && n < 11; x = x.prev) t[n++] = x.time;
+        Arrays.sort(t, 0, n);
+        return t[n / 2];
+    }
+
     /** Full validity check. On success `st` has the block's effects applied and b.cumWork is set. */
     static boolean validate(Block b, Block prev, State st) {
         if (!checkStateless(b)) return false;
         if (b.index != prev.index + 1 || !b.prevHash.equals(prev.hash)) return false;
         if (b.bits != expectedBits(prev)) return false;
-        if (b.time < prev.time || b.time > System.currentTimeMillis() + Params.MAX_FUTURE_MS) return false;
+        if (b.time < prev.time || b.time <= medianTimePast(prev)) return false;      // no time-warping behind the median
+        if (b.time > System.currentTimeMillis() + Params.MAX_FUTURE_MS) return false;
         st.fees = 0;
         for (Transaction t : b.txs) if (!st.apply(t, prev.score, b.index)) return false;   // replay every tx
         Oracle o = st.oracle(b.index);
         if (!Arrays.equals(State.nextIndicators(o, prev), b.indicators)) return false;      // oracle decides
+        st.slash(o, b.index);
         st.payout(b.miner, o, b.score);
         b.cumWork = prev.cumWork.add(b.work());
         return true;
@@ -323,6 +353,25 @@ final class Ledger {
         return n;
     }
 
+    /** Where a transaction is: {1,0} pending, {2,height} confirmed, {0,0} unknown. Scans at most the last 20,000 blocks. */
+    synchronized long[] findTx(String id) {
+        for (Transaction t : mempool) if (t.id().equals(id)) return new long[]{1, 0};
+        for (int i = chain.size() - 1; i >= 1 && i > chain.size() - 20_000; i--)
+            for (Transaction t : chain.get(i).txs) if (t.id().equals(id)) return new long[]{2, i};
+        return new long[]{0, 0};
+    }
+
+    /** Supply target the monetary policy steers toward right now: the score's target, corrected by the attested market quote. */
+    synchronized long effectiveTarget() {
+        return Params.adjustedTarget(tip.score, state.copy().oracle(tip.index + 1).market);
+    }
+
+    /** True if this publisher has a live attestation (not yet expired). */
+    synchronized boolean hasAttestation(String addr) {
+        Report r = state.attests.get(addr);
+        return r != null && tip.index + 1 - r.height <= Params.ORACLE_WINDOW;
+    }
+
     synchronized String oracleStatus() {
         Oracle o = state.copy().oracle(tip.index + 1);
         return "publishers " + o.pubLive + "/" + Params.PUBLISHERS.size() + " live (" + o.pubAgree + " agree, need "
@@ -371,6 +420,36 @@ final class Ledger {
         if (!scratch.apply(t, tip.score, tip.index + 1)) return TxResult.REJECTED;  // dup / conflict / broke
         mempool.add(t);
         return TxResult.ACCEPTED;
+    }
+
+    /**
+     * Why addTx would refuse this (already known to be signed correctly): the specific cause instead of a list of guesses.
+     * Replays the same checks addTx does, in the same order, against confirmed state plus everything pending.
+     */
+    synchronized String rejectReason(Transaction t) {
+        if (mempool.size() >= Params.MEMPOOL_MAX && !t.isPublisherKind()) return "the node's mempool is full; try again shortly";
+        for (Transaction p : mempool) if (p.id().equals(t.id())) return "already pending (duplicate)";
+        int mine = 0;
+        for (Transaction p : mempool) if (p.from().equals(t.from())) mine++;
+        if (mine >= Params.MEMPOOL_PER_ACCOUNT) return "this account already has " + mine + " pending transactions; wait for a block";
+        State scratch = state.copy();
+        for (Transaction p : mempool) scratch.apply(p, tip.score, tip.index + 1);
+        long want = scratch.nextSeq(t.from());
+        if (t.seq != want) return "wrong sequence number " + t.seq + " (the next valid one is " + want + ")";
+        long cost;
+        switch (t.kind) {
+            case Transaction.PAY -> cost = t.amount;
+            case Transaction.PAY_GBU -> {
+                cost = Params.mulDivCeil(t.amount, EconomyIndex.SCORE_BASE, tip.score);
+                if (cost > t.aux) return "the rate moved: this costs " + Params.show(cost) + " now, above your ceiling of " + Params.show(t.aux);
+            }
+            default -> cost = 0;
+        }
+        long have = scratch.bal.getOrDefault(t.from(), 0L);
+        if (have < cost + t.fee)
+            return "insufficient funds: needs " + Params.show(cost + t.fee) + " (amount + fee), available " + Params.show(have)
+                    + " after pending payments";
+        return "not valid on top of the current chain";
     }
 
     private void pruneMempool() {              // after the tip changes: drop what became invalid or was mined
@@ -473,7 +552,7 @@ final class Ledger {
             ind = State.nextIndicators(scratch.oracle(prev.index + 1), prev);
             bits = expectedBits(prev);
         }
-        Block b = new Block(prev.index + 1, prev.hash, Math.max(time, prev.time), bits, 0, minerAddr, ind, picked);
+        Block b = new Block(prev.index + 1, prev.hash, Math.max(time, Math.max(prev.time, medianTimePast(prev) + 1)), bits, 0, minerAddr, ind, picked);
         final Block base = prev;
         BooleanSupplier stale = () -> tip != base;
         return b.solve(stale) ? b : null;

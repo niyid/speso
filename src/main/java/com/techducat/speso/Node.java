@@ -165,7 +165,7 @@ final class Node {
             out.println("CHAL " + nonce);
             String authLine = readLine(in, 2048);
             String[] a = authLine == null ? new String[0] : authLine.split(" ");
-            if (a.length != 4 || !a[0].equals("AUTH") || !Crypto.verify(a[1], "speso-auth|" + nonce, a[2])) {
+            if (a.length != 4 || !a[0].equals("AUTH") || !Crypto.verify(a[1], authMessage(nonce), a[2])) {
                 punish(ip, null, 30);
                 return;
             }
@@ -237,7 +237,7 @@ final class Node {
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             String chal = readLine(in, 256);
             if (chal == null || !chal.startsWith("CHAL ")) throw new IOException("bad handshake");
-            out.println("AUTH " + identity.pubB64 + " " + Crypto.sign(identity.priv, "speso-auth|" + chal.substring(5)) + " " + port);
+            out.println("AUTH " + identity.pubB64 + " " + Crypto.sign(identity.priv, authMessage(chal.substring(5))) + " " + port);
             out.println(msg);
             List<String> reply = new ArrayList<>();
             String l;
@@ -317,13 +317,19 @@ final class Node {
         } catch (Exception e) { /* unreachable or garbage; try the next peer */ }
     }
 
+    /** Record locally and gossip a transaction. */
+    Ledger.TxResult submitTx(Transaction t) {
+        Ledger.TxResult r = ledger.addTx(t);
+        if (r == Ledger.TxResult.ACCEPTED) gossip("TX " + t.encode());
+        return r;
+    }
+
     /** Record locally and gossip a transaction. Returns null on success, else the reason. */
     String submit(Transaction t) {
-        Ledger.TxResult r = ledger.addTx(t);
+        Ledger.TxResult r = submitTx(t);
         if (r != Ledger.TxResult.ACCEPTED)
-            return "rejected (" + (r == Ledger.TxResult.INVALID ? "invalid or fee too low"
-                    : "wrong sequence, insufficient funds, duplicate, or mempool full") + ")";
-        gossip("TX " + t.encode());
+            return "rejected: " + (r == Ledger.TxResult.INVALID ? "invalid signature, or the fee is below the minimum"
+                    : ledger.rejectReason(t));
         return null;
     }
 
@@ -352,7 +358,21 @@ final class Node {
      * Act as an oracle reporter: whenever the local feed file changes (or the old report is about
      * to expire) publish a signed report. Needs a balance: it is your voting weight.
      */
-    void startReporter(Wallet w, String feedFile) {
+    /** What a peer signs to prove its identity. Bound to the network so a testnet handshake is useless elsewhere. */
+    static String authMessage(String nonce) { return "speso-auth|" + Params.NETWORK_ID + "|" + nonce; }
+
+    /** True if the file exists and was modified within maxAgeMs (maxAgeMs <= 0: any age is fine). */
+    static boolean feedFresh(String feedFile, long maxAgeMs) {
+        if (maxAgeMs <= 0) return true;
+        try {
+            return System.currentTimeMillis() - java.nio.file.Files.getLastModifiedTime(java.nio.file.Paths.get(feedFile)).toMillis() <= maxAgeMs;
+        } catch (IOException e) { return false; }
+    }
+
+    void startReporter(Wallet w, String feedFile) { startReporter(w, feedFile, 0); }
+
+    /** As above, but a feed file older than maxAgeMs is ignored, so a source that keeps failing goes silent. 0 = no limit. */
+    void startReporter(Wallet w, String feedFile, long maxAgeMs) {
         if (reporting) return;
         reporting = true;
         daemon("reporter", () -> {
@@ -360,6 +380,7 @@ final class Node {
             int lastHeight = -1;
             while (reporting) {
                 sleep(2000);
+                if (!feedFresh(feedFile, maxAgeMs)) continue;
                 long[] f = EconomyIndex.readFeed(feedFile);
                 if (f == null) continue;
                 int h = ledger.height();
@@ -381,7 +402,10 @@ final class Node {
      * attestation whenever it changes or the old one is about to expire, and the optional "market="
      * line as a market quote. Needs no balance: publishers are a role, not a stake.
      */
-    void startPublisher(Wallet w, String feedFile) {
+    void startPublisher(Wallet w, String feedFile) { startPublisher(w, feedFile, 0); }
+
+    /** As above; a feed file older than maxAgeMs is ignored (0 = no limit), so a failing data source means silence, not stale data. */
+    void startPublisher(Wallet w, String feedFile, long maxAgeMs) {
         if (publishing) return;
         if (!Params.isPublisher(w.address)) throw new IllegalStateException("this wallet is not in the network's publisher set");
         publishing = true;
@@ -391,6 +415,7 @@ final class Node {
             int lastHeight = -1;
             while (publishing) {
                 sleep(2000);
+                if (!feedFresh(feedFile, maxAgeMs)) continue;
                 long[] f = EconomyIndex.readFeed(feedFile);
                 if (f == null) continue;
                 long q = EconomyIndex.readQuote(feedFile);

@@ -61,7 +61,10 @@ final class Transaction {
     boolean isPublisherKind() { return kind == ATTEST || kind == QUOTE; }
 
     /** What actually gets signed: the payload bound to this network. */
-    String signingText() { return Params.NETWORK_ID + "|" + payload(); }
+    String signingText() { return signingText(Params.NETWORK_ID); }
+
+    /** The same, for an explicit network id: a thin wallet signs for the id its node reports, not for its own JVM's settings. */
+    String signingText(String networkId) { return networkId + "|" + payload(); }
 
     /** The transaction's own fields, as sent on the wire. */
     String payload() {
