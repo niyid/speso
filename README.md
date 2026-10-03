@@ -115,3 +115,52 @@ carry a zero fee. Every signature also covers the network id, so a transaction s
 - Peer IDs are free to make (Sybil), hence limits per IP. Nothing is encrypted on the wire. A peer's listening port is
   self-reported. Reorgs replay history (O(chain)); each block copies the account state (O(accounts)). No median-time-past rule.
   Mempool isn't persisted. One key per wallet, no HD derivation, password via environment variable or console.
+
+<!-- usability:start -->
+## Usability test
+
+Tested with JDK 21 using `build.sh`; the three test suites pass. One mining node on testnet plus the thin wallet (`Cli`), with `-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10`. The Gradle build and the live World Bank / IMF feed were not exercised.
+
+Video: [`usability/speso-usability-test.mp4`](usability/speso-usability-test.mp4)
+
+**What worked**
+
+- The whole flow worked first time: create wallet, fund, send, GBU quote, GBU payment, confirmation.
+- Wallet creation warns plainly that there is no recovery.
+- Errors for fractions, wrong password and a missing wallet say exactly what is wrong.
+
+**Rough edges**
+
+- Node unreachable prints `error: null`, with no hint to check the RPC URL.
+- `missing argument` does not say which argument, or show that command's usage.
+- An overspend rejection lists four possible causes in one string.
+- `status` mixes raw units (`score: 10000`) with formatted values; the oracle line is long and jargon-heavy.
+- The node console exits when stdin closes, so running it in the background needs a held-open stdin.
+
+| # | Screen | What it shows |
+|---|---|---|
+| 1 | [Discoverability](usability/screens/01-usage.png) | Running the wallet with no arguments prints one dense usage line. |
+| 2 | [Create a wallet](usability/screens/02-new.png) | Wallet creation warns plainly that there is no recovery. |
+| 3 | [Get your address](usability/screens/03-me.png) | Your address needs no password. |
+| 4 | [Check the node](usability/screens/04-status.png) | status prints raw field names and units (score: 10000, supply: 100000). |
+| 5 | [Read the rate](usability/screens/05-rate.png) | rate shows 1 Sm = 1.0000 GBU, the five indicators and the oracle state. |
+| 6 | [Check balance](usability/screens/06-balance_alice_empty.png) | A new wallet starts at zero. |
+| 7 | [Price in GBU](usability/screens/07-quote.png) | quote shows the cost now and the worst case after 1, 3 and 6 blocks. |
+| 8 | [Send payment](usability/screens/08-send.png) | Funding Alice from the miner wallet. |
+| 9 | [Track it](usability/screens/09-tx_short_id.png) | tx reports the funding payment confirmed, with height and confirmations. |
+| 10 | [Balance updated](usability/screens/10-balance_alice.png) | Alice now holds Sm 5. |
+| 11 | [GBU payment](usability/screens/11-sendgbu_auto.png) | sendgbu with the 'auto' ceiling guards against a falling score. |
+| 12 | [Receiver balance](usability/screens/12-balance_bob.png) | Bob received Sm 2. |
+| 13 | [Pending state](usability/screens/13-send_while_paused.png) | With mining paused, a payment waits in the mempool. |
+| 14 | [Pending state](usability/screens/14-tx_pending.png) | tx reports 'pending'. |
+| 15 | [Pending state](usability/screens/15-status_mempool.png) | status shows mempool: 1. |
+| 16 | [Confirmed](usability/screens/16-tx_confirmed.png) | Mining resumed: the same payment confirms at the next block. |
+| 17 | [Node console](usability/screens/17-node_console.png) | The node's own console: help, chain, balance. |
+| 18 | [Error: overspend](usability/screens/18-err_overspend.png) | Rejected, but the message lists four possible causes. |
+| 19 | [Error: bad address](usability/screens/19-err_badaddr.png) | Short and clear, though it does not say what a valid address looks like. |
+| 20 | [Error: fraction](usability/screens/20-err_fraction.png) | The best message in the tool: it says what is wrong and the limit. |
+| 21 | [Error: missing args](usability/screens/21-err_missing.png) | 'missing argument' does not say which one, or show usage. |
+| 22 | [Error: no wallet](usability/screens/22-err_nowallet.png) | Clear. |
+| 23 | [Error: wrong password](usability/screens/23-err_wrongpw.png) | Clear. |
+| 24 | [Error: node down](usability/screens/24-err_nonode.png) | 'error: null' is the one genuinely unhelpful message. |
+<!-- usability:end -->

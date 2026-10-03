@@ -1213,5 +1213,52 @@ java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span
   </footer>
 
 </div>
+<!-- usability:start -->
+<section class="usability">
+<style>
+.usability video{width:100%;max-width:960px;height:auto;border-radius:8px;display:block;margin:1rem 0}
+.usability .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-top:1rem}
+.usability figure{margin:0}
+.usability figure img{width:100%;height:auto;border-radius:6px;border:1px solid rgba(128,128,128,.35)}
+.usability figcaption{font-size:.85em;margin-top:.3rem}
+</style>
+<h2>Usability test: a first run, screen by screen</h2>
+<p>Tested with JDK 21 using <code>build.sh</code>; the three test suites pass. One mining node on testnet plus the thin wallet (<code>Cli</code>), with <code>-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10</code>. The Gradle build and the live World Bank / IMF feed were not exercised.</p>
+<video controls preload="metadata" poster="usability/screens/00-title.png">
+<source src="usability/speso-usability-test.mp4" type="video/mp4">
+Your browser does not play MP4. <a href="usability/speso-usability-test.mp4">Download the video</a>.
+</video>
+<h3>What worked</h3><ul><li>The whole flow worked first time: create wallet, fund, send, GBU quote, GBU payment, confirmation.</li><li>Wallet creation warns plainly that there is no recovery.</li><li>Errors for fractions, wrong password and a missing wallet say exactly what is wrong.</li></ul>
+<h3>Rough edges</h3><ul><li>Node unreachable prints <code>error: null</code>, with no hint to check the RPC URL.</li><li><code>missing argument</code> does not say which argument, or show that command's usage.</li><li>An overspend rejection lists four possible causes in one string.</li><li><code>status</code> mixes raw units (<code>score: 10000</code>) with formatted values; the oracle line is long and jargon-heavy.</li><li>The node console exits when stdin closes, so running it in the background needs a held-open stdin.</li></ul>
+<details><summary>All 24 screens</summary>
+<div class="grid">
+<figure><a href="usability/screens/01-usage.png"><img loading="lazy" src="usability/screens/01-usage.png" alt="Discoverability: Running the wallet with no arguments prints one dense usage line."></a><figcaption><b>1. Discoverability.</b> Running the wallet with no arguments prints one dense usage line.</figcaption></figure>
+<figure><a href="usability/screens/02-new.png"><img loading="lazy" src="usability/screens/02-new.png" alt="Create a wallet: Wallet creation warns plainly that there is no recovery."></a><figcaption><b>2. Create a wallet.</b> Wallet creation warns plainly that there is no recovery.</figcaption></figure>
+<figure><a href="usability/screens/03-me.png"><img loading="lazy" src="usability/screens/03-me.png" alt="Get your address: Your address needs no password."></a><figcaption><b>3. Get your address.</b> Your address needs no password.</figcaption></figure>
+<figure><a href="usability/screens/04-status.png"><img loading="lazy" src="usability/screens/04-status.png" alt="Check the node: status prints raw field names and units (score: 10000, supply: 100000)."></a><figcaption><b>4. Check the node.</b> status prints raw field names and units (score: 10000, supply: 100000).</figcaption></figure>
+<figure><a href="usability/screens/05-rate.png"><img loading="lazy" src="usability/screens/05-rate.png" alt="Read the rate: rate shows 1 Sm = 1.0000 GBU, the five indicators and the oracle state."></a><figcaption><b>5. Read the rate.</b> rate shows 1 Sm = 1.0000 GBU, the five indicators and the oracle state.</figcaption></figure>
+<figure><a href="usability/screens/06-balance_alice_empty.png"><img loading="lazy" src="usability/screens/06-balance_alice_empty.png" alt="Check balance: A new wallet starts at zero."></a><figcaption><b>6. Check balance.</b> A new wallet starts at zero.</figcaption></figure>
+<figure><a href="usability/screens/07-quote.png"><img loading="lazy" src="usability/screens/07-quote.png" alt="Price in GBU: quote shows the cost now and the worst case after 1, 3 and 6 blocks."></a><figcaption><b>7. Price in GBU.</b> quote shows the cost now and the worst case after 1, 3 and 6 blocks.</figcaption></figure>
+<figure><a href="usability/screens/08-send.png"><img loading="lazy" src="usability/screens/08-send.png" alt="Send payment: Funding Alice from the miner wallet."></a><figcaption><b>8. Send payment.</b> Funding Alice from the miner wallet.</figcaption></figure>
+<figure><a href="usability/screens/09-tx_short_id.png"><img loading="lazy" src="usability/screens/09-tx_short_id.png" alt="Track it: tx reports the funding payment confirmed, with height and confirmations."></a><figcaption><b>9. Track it.</b> tx reports the funding payment confirmed, with height and confirmations.</figcaption></figure>
+<figure><a href="usability/screens/10-balance_alice.png"><img loading="lazy" src="usability/screens/10-balance_alice.png" alt="Balance updated: Alice now holds Sm 5."></a><figcaption><b>10. Balance updated.</b> Alice now holds Sm 5.</figcaption></figure>
+<figure><a href="usability/screens/11-sendgbu_auto.png"><img loading="lazy" src="usability/screens/11-sendgbu_auto.png" alt="GBU payment: sendgbu with the 'auto' ceiling guards against a falling score."></a><figcaption><b>11. GBU payment.</b> sendgbu with the 'auto' ceiling guards against a falling score.</figcaption></figure>
+<figure><a href="usability/screens/12-balance_bob.png"><img loading="lazy" src="usability/screens/12-balance_bob.png" alt="Receiver balance: Bob received Sm 2."></a><figcaption><b>12. Receiver balance.</b> Bob received Sm 2.</figcaption></figure>
+<figure><a href="usability/screens/13-send_while_paused.png"><img loading="lazy" src="usability/screens/13-send_while_paused.png" alt="Pending state: With mining paused, a payment waits in the mempool."></a><figcaption><b>13. Pending state.</b> With mining paused, a payment waits in the mempool.</figcaption></figure>
+<figure><a href="usability/screens/14-tx_pending.png"><img loading="lazy" src="usability/screens/14-tx_pending.png" alt="Pending state: tx reports 'pending'."></a><figcaption><b>14. Pending state.</b> tx reports 'pending'.</figcaption></figure>
+<figure><a href="usability/screens/15-status_mempool.png"><img loading="lazy" src="usability/screens/15-status_mempool.png" alt="Pending state: status shows mempool: 1."></a><figcaption><b>15. Pending state.</b> status shows mempool: 1.</figcaption></figure>
+<figure><a href="usability/screens/16-tx_confirmed.png"><img loading="lazy" src="usability/screens/16-tx_confirmed.png" alt="Confirmed: Mining resumed: the same payment confirms at the next block."></a><figcaption><b>16. Confirmed.</b> Mining resumed: the same payment confirms at the next block.</figcaption></figure>
+<figure><a href="usability/screens/17-node_console.png"><img loading="lazy" src="usability/screens/17-node_console.png" alt="Node console: The node's own console: help, chain, balance."></a><figcaption><b>17. Node console.</b> The node's own console: help, chain, balance.</figcaption></figure>
+<figure><a href="usability/screens/18-err_overspend.png"><img loading="lazy" src="usability/screens/18-err_overspend.png" alt="Error: overspend: Rejected, but the message lists four possible causes."></a><figcaption><b>18. Error: overspend.</b> Rejected, but the message lists four possible causes.</figcaption></figure>
+<figure><a href="usability/screens/19-err_badaddr.png"><img loading="lazy" src="usability/screens/19-err_badaddr.png" alt="Error: bad address: Short and clear, though it does not say what a valid address looks like."></a><figcaption><b>19. Error: bad address.</b> Short and clear, though it does not say what a valid address looks like.</figcaption></figure>
+<figure><a href="usability/screens/20-err_fraction.png"><img loading="lazy" src="usability/screens/20-err_fraction.png" alt="Error: fraction: The best message in the tool: it says what is wrong and the limit."></a><figcaption><b>20. Error: fraction.</b> The best message in the tool: it says what is wrong and the limit.</figcaption></figure>
+<figure><a href="usability/screens/21-err_missing.png"><img loading="lazy" src="usability/screens/21-err_missing.png" alt="Error: missing args: 'missing argument' does not say which one, or show usage."></a><figcaption><b>21. Error: missing args.</b> 'missing argument' does not say which one, or show usage.</figcaption></figure>
+<figure><a href="usability/screens/22-err_nowallet.png"><img loading="lazy" src="usability/screens/22-err_nowallet.png" alt="Error: no wallet: Clear."></a><figcaption><b>22. Error: no wallet.</b> Clear.</figcaption></figure>
+<figure><a href="usability/screens/23-err_wrongpw.png"><img loading="lazy" src="usability/screens/23-err_wrongpw.png" alt="Error: wrong password: Clear."></a><figcaption><b>23. Error: wrong password.</b> Clear.</figcaption></figure>
+<figure><a href="usability/screens/24-err_nonode.png"><img loading="lazy" src="usability/screens/24-err_nonode.png" alt="Error: node down: 'error: null' is the one genuinely unhelpful message."></a><figcaption><b>24. Error: node down.</b> 'error: null' is the one genuinely unhelpful message.</figcaption></figure>
+</div></details>
+</section>
+<!-- usability:end -->
+
 </body>
 </html>
