@@ -186,6 +186,7 @@ public final class Main {
                         System.out.println(EconomyIndex.describe(t.indicators));
                         System.out.println("supply " + Params.show(ledger.supply()) + " / target "
                                 + Params.show(ledger.effectiveTarget()) + " (score-only target " + Params.show(Params.supplyTarget(t.score)) + ")" + "   difficulty " + t.bits + " bits");
+                        System.out.println("burned since genesis " + Params.show(ledger.burned()));
                         System.out.println("oracle: " + ledger.oracleStatus());
                     }
                     case "chain" -> {

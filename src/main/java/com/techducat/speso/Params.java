@@ -66,6 +66,10 @@ final class Params {
     // A stake reporter whose report lands in a block and contradicts the publishers' agreed value by more than
     // EconomyIndex.ANCHOR_TOL loses this % of its balance (burned). That makes a veto by stake cost something.
     static final int SLASH_PCT = (int) prop("speso.slashpct", 2);
+    // Deflation: by default the supply ceiling can only fall below SUPPLY_BASE, never rise above it, so a weak economy lowers
+    // the VALUE of a spesmilo (score < 100) instead of inflating the supply. -Dspeso.elastic=true restores the older
+    // counter-cyclical rule (ceiling above SUPPLY_BASE when the score is below 100, and when the market quote is above the peg).
+    static final boolean ELASTIC = Boolean.parseBoolean(System.getProperty("speso.elastic", "false"));
     static {
         checkPublisherConfig(PUBLISHERS.size(), PUBLISHER_THRESHOLD);
         if (SLASH_PCT < 0 || SLASH_PCT > 20) throw new IllegalStateException("speso.slashpct must be 0..20");
@@ -97,7 +101,7 @@ final class Params {
     static final int PEG_ADJ_MAX_PCT = 150;        //   so a lying quote quorum has bounded reach
 
     /** Identifies this network. Signed into every transaction (no cross-network replay) and into the genesis block. */
-    static final String NETWORK_ID = Crypto.sha256("speso/3|" + NETWORK + "|" + SLASH_PCT + "|" + INIT_BITS + "|" + SUPPLY_BASE + "|" + MAX_REWARD + "|"
+    static final String NETWORK_ID = Crypto.sha256("speso/4|" + NETWORK + "|" + SLASH_PCT + "|" + ELASTIC + "|" + INIT_BITS + "|" + SUPPLY_BASE + "|" + MAX_REWARD + "|"
             + ORACLE_WINDOW + "|" + ORACLE_QUORUM_DIV + "|" + ORACLE_SHARE_PCT + "|" + String.join(",", PUBLISHERS) + "|"
             + PUBLISHER_THRESHOLD + "|" + QUOTE_TOLERANCE_PCT + "|" + PEG_ADJ_MIN_PCT + "|" + PEG_ADJ_MAX_PCT).substring(0, 16);
 
@@ -124,8 +128,14 @@ final class Params {
         return qr[1].signum() == 0 ? qr[0].longValueExact() : qr[0].add(BigInteger.ONE).longValueExact();
     }
 
-    /** Supply the monetary policy steers toward: a healthier economy => fewer spesmiloj. */
-    static long supplyTarget(long score) { return mulDiv(SUPPLY_BASE, EconomyIndex.SCORE_BASE, score); }
+    /**
+     * Supply the monetary policy steers toward: a healthier economy => fewer spesmiloj. Deflationary by default: the ceiling
+     * never exceeds SUPPLY_BASE, however weak the economy (see ELASTIC).
+     */
+    static long supplyTarget(long score) {
+        long t = mulDiv(SUPPLY_BASE, EconomyIndex.SCORE_BASE, score);
+        return ELASTIC ? t : Math.min(t, SUPPLY_BASE);
+    }
 
     /**
      * The same target corrected by what the market says. `market` is the attested market value of one
@@ -138,7 +148,8 @@ final class Params {
         long t = supplyTarget(score);
         if (market <= 0) return t;
         long pct = Math.max(PEG_ADJ_MIN_PCT, Math.min(PEG_ADJ_MAX_PCT, mulDiv(market, 100, score)));
-        return mulDiv(t, pct, 100);
+        long adj = mulDiv(t, pct, 100);
+        return ELASTIC ? adj : Math.min(adj, SUPPLY_BASE);       // a market above the peg can lift the ceiling back, never past the base
     }
 
     private static String symbol() {

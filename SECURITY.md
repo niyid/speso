@@ -22,6 +22,7 @@
 | Cross-network replay | Network id (name, publishers, slash rate and the other consensus settings) inside the signed payload and handshake; a thin wallet signs for the id its node reports | none known |
 | Oracle manipulation by stake | Publishers set the value, stake can only ratify or veto, a contradicting report is slashed (2%) | Colluding or corrupt publisher quorum plus a stake majority |
 | Oracle manipulation by miners | Block indicators are derived, never chosen | none known |
+| Supply inflation | The ceiling is capped at the base supply (`speso.elastic` is false by default); minting only up to the ceiling | Elastic mode, if enabled, lets a weak score raise the ceiling |
 | Timestamp manipulation | Median-time-past, future limit, 4x retarget clamp | none known |
 | DoS | Line/reply caps, rate limits, bans, bounded pools and mempool | Sybil with many IPs |
 | Wallet theft | Encrypted key file | Weak password; malware; no HSM or HD keys |

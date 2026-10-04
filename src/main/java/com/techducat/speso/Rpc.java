@@ -131,7 +131,7 @@ final class Rpc {
     private Object status() {
         Block t = ledger.tip();
         return Json.obj("network", Params.NETWORK, "networkId", Params.NETWORK_ID, "height", t.index, "tip", t.hash, "score", t.score,
-                "bits", t.bits, "supply", ledger.supply(), "supplyFmt", Params.fmt(ledger.supply()),
+                "bits", t.bits, "supply", ledger.supply(), "supplyFmt", Params.fmt(ledger.supply()), "burned", ledger.burned(),
                 "mempool", ledger.mempoolSize(), "peers", node.peers().size(), "mining", node.isMining(),
                 "oracle", ledger.oracleStatus(), "anchored", !Params.PUBLISHERS.isEmpty());
     }
@@ -142,7 +142,7 @@ final class Rpc {
         for (int i = 0; i < EconomyIndex.N; i++) ind.put(EconomyIndex.NAMES[i], t.indicators[i]);
         return Json.obj("block", t.index, "score", t.score,
                 "gbuPerSpesmilo", String.format(Locale.ROOT, "%.4f", t.score / 10000.0),
-                "indicators", ind, "supply", ledger.supply(), "target", ledger.effectiveTarget(), "baseTarget", Params.supplyTarget(t.score),
+                "indicators", ind, "supply", ledger.supply(), "burned", ledger.burned(), "target", ledger.effectiveTarget(), "baseTarget", Params.supplyTarget(t.score),
                 "bits", t.bits, "oracle", ledger.oracleStatus());
     }
 

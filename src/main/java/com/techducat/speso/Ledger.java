@@ -75,12 +75,13 @@ final class Ledger {
         final Map<String, Report> quotes = new HashMap<>();       // publisher market quotes (ind[0] = quote)
         long supply = 0;
         long fees = 0;      // fees collected so far in the block being applied
+        long burned = 0;    // coins destroyed since genesis: burned fees and slashed stake (bookkeeping, not consensus data)
 
         State copy() {
             State s = new State();
             s.bal.putAll(bal); s.seq.putAll(seq); s.reports.putAll(reports);
             s.attests.putAll(attests); s.quotes.putAll(quotes);
-            s.supply = supply;
+            s.supply = supply; s.burned = burned;
             return s;
         }
 
@@ -220,7 +221,7 @@ final class Ledger {
                 Report r = e.getValue();
                 if (r.height != height || EconomyIndex.within(r.ind, o.anchor, EconomyIndex.ANCHOR_TOL)) continue;
                 long b = bal.getOrDefault(e.getKey(), 0L), cut = b * Params.SLASH_PCT / 100;
-                if (cut > 0) { bal.put(e.getKey(), b - cut); supply -= cut; }
+                if (cut > 0) { bal.put(e.getKey(), b - cut); supply -= cut; burned += cut; }
             }
         }
 
@@ -233,8 +234,8 @@ final class Ledger {
         void payout(String miner, Oracle o, long score) {
             long target = Params.adjustedTarget(score, o.market);
             long reward = Math.max(0, Math.min(Params.MAX_REWARD, target - supply));
-            long feesToMiner = fees, burned = 0;
-            if (supply > target) { burned = fees; feesToMiner = 0; }      // over target: contract
+            long toBurn = supply > target ? fees : 0;           // over target: the whole fee is destroyed, the supply must shrink
+            long feesToMiner = fees - toBurn;
             long minerCut = reward;
             if (o.quorum && o.agreeTotal > 0 && reward > 0) {
                 long bonus = reward * Params.ORACLE_SHARE_PCT / 100;
@@ -246,7 +247,8 @@ final class Ledger {
                 minerCut = reward - paid;
             }
             bal.merge(miner, minerCut + feesToMiner, Long::sum);
-            supply += reward - burned;
+            supply += reward - toBurn;
+            burned += toBurn;
             fees = 0;
         }
 
@@ -360,6 +362,9 @@ final class Ledger {
             for (Transaction t : chain.get(i).txs) if (t.id().equals(id)) return new long[]{2, i};
         return new long[]{0, 0};
     }
+
+    /** Total coins destroyed since genesis (burned fees plus slashed stake). */
+    synchronized long burned() { return state.burned; }
 
     /** Supply target the monetary policy steers toward right now: the score's target, corrected by the attested market quote. */
     synchronized long effectiveTarget() {

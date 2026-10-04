@@ -12,13 +12,34 @@ This one is pinned to the world economy. (Terminals that cannot show ₷ print `
 **Status: unaudited. Do not use to hold anything of value.** The default network is `testnet`.
 See [SECURITY.md](SECURITY.md).
 
+## Deflation
+
+Deflation was part of the idea from the start. Three things make the Speso deflationary, and two honest limits say how far it goes.
+
+1. **A ceiling that only goes down.** The supply ceiling is `21,000,000 ₷ x 100 / score`, and it is never above `21,000,000 ₷`
+   (`Params.supplyTarget`). A stronger economy lowers it. A weaker one does not raise it: the *value* of a spesmilo falls instead of
+   the supply growing. (`-Dspeso.elastic=true` restores the older counter-cyclical rule, where a score below 100 lifts the ceiling.)
+2. **No issuance above the ceiling, and fees are destroyed.** Above it nothing is minted and every transaction fee is burned, so the supply
+   can only shrink. Stake slashed for contradicting the publishers is burned too. `rate` and `GET /v1/rate` show the running total
+   (`burned since genesis`).
+3. **The price side.** One spesmilo is worth `score / 100` GBU, so a growing economy makes each ₷ worth more GBU and the same goods cost
+   fewer ₷. `sendgbu` and `quote` price in GBU for exactly this reason.
+
+**Limits.**
+- *The supply barely shrinks by itself.* The minimum fee is one speso (₷ 0.001). A score of 116 lowers the ceiling by about ₷ 2.9 million,
+  which would take about 2.9 billion minimum-fee transactions to burn. In practice the ceiling works by **stopping issuance**; the strong
+  deflationary effect is on the price.
+- *It is not perpetual.* The score is built from growth *rates* around a baseline. If the world grows at the baseline rate the score sits at
+  100 and the value is flat; only growth above it, or a falling stress reading, makes the spesmilo appreciate.
+- *Booms are partly undone.* If the ceiling later recovers, mining resumes up to it, so coins burned below the ceiling are issued again.
+
 ## Build, test, run
 
 Sources live under `src/main/java/com/techducat/speso/`, tests under `src/test/java/com/techducat/speso/`.
 
 ```sh
 ./build.sh      # javac if present, else the jdk.compiler module -> out/
-./test.sh       # SelfTest + AnchoredTest + ToolsTest, each in its own JVM (Params are static): 224 checks
+./test.sh       # SelfTest + AnchoredTest + DeflationTest + ToolsTest, each in its own JVM (Params are static): 253 checks
 ```
 
 ### A node (full node + miner + optional RPC and automatic oracle feed)
@@ -117,7 +138,7 @@ that line to the file by hand.
 
 | Piece | How it was checked |
 |---|---|
-| Ledger, two-key oracle, slashing, peg feedback, RPC, thin wallet, feed logic | 224 automated checks: `SelfTest` 118, `AnchoredTest` 32, `ToolsTest` 74 |
+| Ledger, two-key oracle, slashing, deflation, peg feedback, RPC, thin wallet, feed logic | 253 automated checks: `SelfTest` 119, `AnchoredTest` 32, `DeflationTest` 28, `ToolsTest` 74 |
 | Feed against World Bank / IMF **reply formats** | Fixtures in the author's reading of the formats, served by a local fake server |
 | Whole pipeline across real processes | One node (publisher, reporter and miner, threshold 1) and thin wallets in separate JVMs: feed file -> attestation -> score -> payments, pending/confirmed tracking, market quote -> lower supply target (see the usability test below) |
 | **Real World Bank / IMF endpoints** | **Not contacted** (the build environment could not reach them). First live run is yours: use `--probe`. |
@@ -140,7 +161,7 @@ that line to the file by hand.
 | `Cli.java`, `Quote.java` | Thin wallet; GBU price quotes and worst-case ceilings |
 | `Feed.java` | World Bank + IMF fetch, cross-check, five-indicator file |
 | `Main.java` | Full node CLI |
-| `SelfTest.java`, `AnchoredTest.java`, `ToolsTest.java` | Tests; three JVMs because `Params` are static |
+| `SelfTest.java`, `AnchoredTest.java`, `DeflationTest.java`, `ToolsTest.java` | Tests; four JVMs because `Params` are static |
 
 ## Double-spend prevention
 
@@ -180,11 +201,11 @@ network is invalid on another.
 
 ## Making the value mean something
 
-- **Elastic supply.** Target supply = `21,000,000 ₷ x 100 / score`. Below target the block reward (max ₷ 50) is minted, never
-  past the target. Above target nothing is minted and **all fees are burned**.
+- **Deflationary supply.** Target supply = `21,000,000 ₷ x 100 / score`, capped at `21,000,000 ₷` (see Deflation above). Below target
+  the block reward (max ₷ 50) is minted, never past the target. Above target nothing is minted and **all fees are burned**.
 - **Peg feedback.** Publishers may also sign a **market quote** (`Q`): the market value of one spesmilo in GBU. When a quorum of
-  them agree within 5%, the supply target is scaled by market/peg, clamped to 50%..150%. A market below the peg stops minting and
-  burns fees; one above it lets supply grow. This is a feedback signal, not enforcement. `rate` and `GET /v1/rate` show the
+  them agree within 5%, the supply target is scaled by market/peg, clamped to 50%..150% and never above the 21,000,000 ₷ base. A market
+  below the peg stops minting and burns fees; one above it can only lift the ceiling back toward the base. This is a feedback signal, not enforcement. `rate` and `GET /v1/rate` show the
   resulting target.
 - **GBU-denominated payments** (`sendgbu`): the sender signs "pay X GBU, at most M spesoj"; the chain converts at the previous
   block's rate, so a merchant can price in GBU and receive the right number of spesmiloj. `quote` shows the cost now and the
@@ -211,8 +232,8 @@ network is invalid on another.
   named, trusted parties chosen at genesis. If a publisher quorum and a stake majority collude they set the number. Publishers
   should read independent sources; several publishers copying one source are one point of failure. Publishers are not slashed.
   The automatic feed (World Bank + IMF) is untested against the live endpoints.
-- **Value.** The protocol steers value (elastic supply, peg feedback, GBU settlement). It cannot make any market pay the peg
-  price. Contraction is one-sided: it stops minting and burns fees; it never confiscates balances.
+- **Value.** The protocol steers value (a deflationary ceiling, peg feedback, GBU settlement). It cannot make any market pay the peg
+  price. Contraction is one-sided and slow: it stops minting and burns fees; it never confiscates balances (slashing aside).
 - **Audit.** This code has not been audited by anyone, and the tests are written by the same hands as the code. The node refuses to
   start without `--i-understand-unaudited`. It must not hold anything of real value.
 - Not tested: a live multi-machine network with several real publishers.
@@ -226,7 +247,7 @@ network is invalid on another.
 <!-- usability:start -->
 ## Usability test
 
-Tested with JDK 21 using `build.sh` on this code: all three test suites pass (224 checks). One testnet node (a single publisher with threshold 1, which also reports and mines) and thin wallets in separate processes, with `-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10`. Commands are shown as `speso-wallet` for `java -cp out com.techducat.speso.Cli`. Not exercised: several publishers on several machines, the live World Bank and IMF endpoints, and the Gradle build.
+Tested with JDK 21 using `build.sh` on this code: all three test suites pass (224 checks). One testnet node (a single publisher with threshold 1, which also reports and mines) and thin wallets in separate processes, with `-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10`. Commands are shown as `speso-wallet` for `java -cp out com.techducat.speso.Cli`. Recorded on the previous release; the deflation change since adds a `burned since genesis` line to `rate`. Not exercised: several publishers on several machines, the live World Bank and IMF endpoints, and the Gradle build.
 
 Video: [`usability/speso-usability-test.mp4`](usability/speso-usability-test.mp4)
 

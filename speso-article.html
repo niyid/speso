@@ -6,7 +6,7 @@
 <title>The 24-Year Journey to Speso: A Global, Peer-to-Peer Currency Whose Value Comes From the World Economy</title>
 
 <!-- SEO -->
-<meta name="description" content="The idea dates to 1995; in April 2002 I wrote the first code for a global, peer-to-peer, decentralized currency whose value derives from global economic metrics. Twenty-four years later it is Speso, open code in plain Java. How double-spend is stopped, how a two-key oracle sets the price, and what still cannot be solved.">
+<meta name="description" content="The idea dates to 1995; in April 2002 I wrote the first code for a global, peer-to-peer, decentralized, deflationary currency whose value derives from global economic metrics. Twenty-four years later it is Speso, open code in plain Java. How double-spend is stopped, how a two-key oracle sets the price, and what still cannot be solved.">
 <meta name="author" content="niyid">
 <meta name="keywords" content="speso, spesmilo, cryptocurrency, peer-to-peer, double-spend, oracle, Java, blockchain, Esperanto, global economic indicators, open source">
 
@@ -758,8 +758,8 @@
 
     <p>
       The seed of the idea goes back to 1995, but I wrote no code then. April 2002 is when it became concrete, and when I started writing code.
-      The notebook in the banner above shows how I listed it: five bullet points, and one underlined problem. <strong>Global currency. Peer-to-peer. Decentralized. Distributed. Value from global economic
-      metrics.</strong> Then: <em>the big problem? Double-spend.</em> And under it, a doodle of boxes joined by arrows,
+      The notebook in the banner above shows how I listed it: bullet points, and one underlined problem. <strong>Global currency. Peer-to-peer. Decentralized. Distributed. Deflationary. Value from global economic
+      metrics.</strong> (The picture shows five of the six; deflationary was part of the idea from the start and was missed there.) Then: <em>the big problem? Double-spend.</em> And under it, a doodle of boxes joined by arrows,
       with a question mark: <em>linked-list?</em>
     </p>
 
@@ -780,7 +780,7 @@
 
     <div class="timeline">
       <div class="tl-item"><div class="when">1995</div><p>The initial idea. No code is written.</p></div>
-      <div class="tl-item"><div class="when">APRIL 2002</div><p>The idea gets concrete: five bullet points, one named problem (double-spend), one data structure (a linked list of sorts). The first code is written. Still no name.</p></div>
+      <div class="tl-item"><div class="when">APRIL 2002</div><p>The idea gets concrete: a list of bullet points (global, peer-to-peer, decentralized, distributed, deflationary, value from economic metrics), one named problem (double-spend), one data structure (a linked list of sorts). The first code is written. Still no name.</p></div>
       <div class="tl-item"><div class="when">2002 → 2026</div><p>Distractions and detours. Several pitstops. The idea never stops being the one I come back to. Twenty-four years are counted from that first code.</p></div>
       <div class="tl-item"><div class="when">2026</div><p>The name arrives: <strong>Speso</strong>, a nod to the Esperanto I was curious about then. The code is finished as plain Java, and the idea finally becomes a documentary of how it works.</p></div>
     </div>
@@ -808,7 +808,7 @@
     <div class="stat-grid">
       <div class="stat"><b>1 ₷</b><span>= 1,000 spesoj</span></div>
       <div class="stat"><b>16</b><span>main source files</span></div>
-      <div class="stat"><b>3,077</b><span>lines of main code</span></div>
+      <div class="stat"><b>3,105</b><span>lines of main code</span></div>
       <div class="stat"><b>0</b><span>dependencies</span></div>
     </div>
   </section>
@@ -1055,8 +1055,8 @@ o.median = candidate;
     </p>
 
     <div class="pillars-grid">
-      <div class="pillar pillar-emerald"><h3>Elastic supply</h3><p>Target supply is 21,000,000 ₷ × 100 / score. Below target, the block reward (max ₷ 50) is minted, never past the target. Above it nothing is minted and <strong>all fees are burned</strong>. A healthy world tightens supply; a sick one loosens it.</p></div>
-      <div class="pillar pillar-amber"><h3>Peg feedback</h3><p>Publishers can also sign a <strong>market quote</strong>. When a quorum agree within 5%, a market price below the peg shrinks the supply target and one above it grows it, clamped to 50%&ndash;150%.</p></div>
+      <div class="pillar pillar-emerald"><h3>Deflationary supply</h3><p>Target supply is 21,000,000 ₷ × 100 / score, and never above 21,000,000 ₷. Below target, the block reward (max ₷ 50) is minted, never past the target. Above it nothing is minted and <strong>all fees are burned</strong>. A healthy world tightens supply; a sick one lowers the value of a ₷ instead of inflating the supply.</p></div>
+      <div class="pillar pillar-amber"><h3>Peg feedback</h3><p>Publishers can also sign a <strong>market quote</strong>. When a quorum agree within 5%, a market price below the peg shrinks the supply target and one above it can only lift it back toward 21,000,000 ₷, clamped to 50%&ndash;150%.</p></div>
       <div class="pillar pillar-blue"><h3>GBU-denominated payments</h3><p>Sign &ldquo;pay X GBU, at most M spesoj&rdquo;. The chain converts at the previous block's rate, so a merchant can price in GBU and always receive the right number of ₷. This is the layer that lets the index be <em>used</em>.</p></div>
       <div class="pillar" style="border-left:3px solid var(--red)"><h3>The limit</h3><p>None of this can make a market outside the chain pay the peg price. The protocol steers; it cannot compel.</p></div>
     </div>
@@ -1067,7 +1067,8 @@ o.median = candidate;
     <span class="kw">long</span> t = supplyTarget(score);
     <span class="kw">if</span> (market &lt;= <span class="num">0</span>) <span class="kw">return</span> t;
     <span class="kw">long</span> pct = Math.max(PEG_ADJ_MIN_PCT, Math.min(PEG_ADJ_MAX_PCT, mulDiv(market, <span class="num">100</span>, score)));
-    <span class="kw">return</span> mulDiv(t, pct, <span class="num">100</span>);
+    <span class="kw">long</span> adj = mulDiv(t, pct, <span class="num">100</span>);
+    <span class="kw">return</span> ELASTIC ? adj : Math.min(adj, SUPPLY_BASE);   <span class="cm">// never past the base</span>
 }</div>
     </div>
 
@@ -1075,8 +1076,34 @@ o.median = candidate;
       The honest limit is the second item on my original list: <em>the supply policy and GBU settlement steer the value but cannot force a
       market to honour it.</em> No software can. A shop in another currency's economy will pay whatever it likes for a coin. What the code
       can do is make the protocol react: when the market values ₷ below the peg, the chain stops minting and burns fees, which is the
-      only lever it has. It is feedback, not enforcement, and contraction is one-sided: it never confiscates a balance. The CLI says
+      only lever it has. It is feedback, not enforcement, and contraction is one-sided and slow: it never confiscates a balance. The CLI says
       so too: <code>rate</code> prints a &ldquo;protocol reference&rdquo; and reminds you that what a market pays may differ.
+    </p>
+
+    <h3>Deflation: what it is, and how far it goes</h3>
+
+    <p>
+      Deflation was in the idea from the start. It was left out of the banner and out of the first version of this article, and it is
+      in the code. Three things make the Speso deflationary:
+    </p>
+
+    <ul>
+      <li><strong>A ceiling that only goes down.</strong> The supply ceiling is 21,000,000 ₷ × 100 / score and is <em>never above 21,000,000 ₷</em>.
+        A stronger economy lowers it. A weaker one does not raise it: the value of a ₷ falls instead of the supply growing.</li>
+      <li><strong>Nothing is issued above the ceiling, and fees are destroyed.</strong> Above it no coins are minted and every fee is burned, so the
+        supply can only shrink. Stake slashed for contradicting the publishers is burned too. <code>rate</code> prints the running total
+        (&ldquo;burned since genesis&rdquo;).</li>
+      <li><strong>The price side.</strong> One ₷ is worth score / 100 GBU, so a growing economy makes each ₷ worth more GBU and the same goods cost
+        fewer ₷.</li>
+    </ul>
+
+    <p>
+      Two limits, stated plainly. <strong>The supply barely shrinks on its own</strong>: the minimum fee is one speso, ₷ 0.001, and a score of 116 lowers the
+      ceiling by about ₷ 2.9 million, which would take roughly 2.9 billion minimum-fee transactions to burn. In practice the ceiling works by stopping
+      issuance, and the strong effect is on the price. <strong>And it is not perpetual</strong>: the score is built from growth <em>rates</em> around a baseline, so a world
+      growing at the baseline rate sits at score 100 and the value is flat. Booms are also partly undone: when the ceiling recovers, mining resumes up to it, so coins burned
+      below the ceiling are issued again. The older counter-cyclical rule, where a weak economy raised the ceiling, is still there behind
+      <code>-Dspeso.elastic=true</code>.
     </p>
   </section>
 
@@ -1117,7 +1144,7 @@ o.median = candidate;
   <!-- ═══ 8: AUDIT ═══ -->
   <section>
     <div class="section-kicker">Audit</div>
-    <h2>What 224 Passing Tests Do and Do Not Mean</h2>
+    <h2>What 253 Passing Tests Do and Do Not Mean</h2>
 
     <p>
       The third item on my list was <em>the code is unaudited and shouldn't hold anything of real value.</em> I cannot fix that with code,
@@ -1127,9 +1154,9 @@ o.median = candidate;
     </p>
 
     <div class="stat-grid">
-      <div class="stat"><b>224</b><span>checks pass</span></div>
-      <div class="stat"><b>3</b><span>suites, each in its own JVM</span></div>
-      <div class="stat"><b>1,064</b><span>lines of tests</span></div>
+      <div class="stat"><b>253</b><span>checks pass</span></div>
+      <div class="stat"><b>4</b><span>suites, each in its own JVM</span></div>
+      <div class="stat"><b>1,183</b><span>lines of tests</span></div>
       <div class="stat"><b>0</b><span>independent audits</span></div>
     </div>
 
@@ -1162,7 +1189,7 @@ o.median = candidate;
     <div class="code-block">
       <div class="code-header"><span>shell</span><span class="lang">sh</span></div>
       <div class="code-body">./build.sh
-./test.sh                                           # <span class="num">224</span> checks, three JVMs
+./test.sh                                           # <span class="num">253</span> checks, four JVMs
 
 # every node needs the SAME publisher list (their wallet addresses); it is part of the network id
 export SPESO_PASSWORD='something <span class="kw">long</span>'
@@ -1189,7 +1216,7 @@ java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span
     </style>
     <div class="section-kicker">Usability Test</div>
     <h2>A First Run, Screen by Screen</h2>
-    <p>Tested with JDK 21 using <code>build.sh</code> on this code: all three test suites pass (224 checks). One testnet node (a single publisher with threshold 1, which also reports and mines) and thin wallets in separate processes, with <code>-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10</code>. Commands are shown as <code>speso-wallet</code> for <code>java -cp out com.techducat.speso.Cli</code>. Not exercised: several publishers on several machines, the live World Bank and IMF endpoints, and the Gradle build.</p>
+    <p>Tested with JDK 21 using <code>build.sh</code> on this code: all three test suites pass (224 checks). One testnet node (a single publisher with threshold 1, which also reports and mines) and thin wallets in separate processes, with <code>-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10</code>. Commands are shown as <code>speso-wallet</code> for <code>java -cp out com.techducat.speso.Cli</code>. Recorded on the previous release; the deflation change since adds a <code>burned since genesis</code> line to <code>rate</code>. Not exercised: several publishers on several machines, the live World Bank and IMF endpoints, and the Gradle build.</p>
     <video controls preload="metadata" poster="usability/screens/00-title.png">
       <source src="usability/speso-usability-test.mp4" type="video/mp4">
       Your browser does not play MP4. <a href="usability/speso-usability-test.mp4">Download the video</a>.
@@ -1237,7 +1264,7 @@ java $PUB -cp out com.techducat.speso.Main --i-understand-unaudited --port <span
     <h2>Twenty-Four Years, and a Documentary</h2>
 
     <p>
-      The idea was there in 1995. In 2002 I had five bullet points, one named problem and the first code. In 2026 I have about 3,000 lines of plain Java that solve the problem, a
+      The idea was there in 1995. In 2002 I had a list of bullet points, one named problem and the first code. In 2026 I have about 3,000 lines of plain Java that solve the problem, a
       price rule that cannot be set by any single party, a feedback loop that reacts to the market without pretending to command it,
       and a list of things it does not do, kept as honest as the list of things it does.
     </p>

@@ -174,6 +174,8 @@ public final class Cli {
                 out.println("indicators " + m.get("indicators"));
                 out.println("supply " + Params.show(RpcClient.num(m, "supply")) + " / target " + Params.show(RpcClient.num(m, "target"))
                         + "   difficulty " + m.get("bits") + " bits");
+                out.println("burned since genesis " + Params.show(RpcClient.num(m, "burned"))
+                        + (RpcClient.num(m, "supply") > RpcClient.num(m, "target") ? "   (supply is ABOVE target: no new coins, every fee is burned)" : ""));
                 out.println("oracle: " + m.get("oracle"));
             }
             case "status" -> {

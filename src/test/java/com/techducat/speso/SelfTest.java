@@ -266,7 +266,8 @@ public final class SelfTest {
         check("no quote => target unchanged", Params.adjustedTarget(10_000, 0) == base);
         check("market at 80% of the peg => target 80%", Params.adjustedTarget(10_000, 8000) == base * 80 / 100);
         check("the correction is clamped at 50% (a lying quote has bounded reach)", Params.adjustedTarget(10_000, 1000) == base / 2);
-        check("the correction is clamped at 150%", Params.adjustedTarget(10_000, 90_000) == base * 150 / 100);
+        check("a market far above the peg cannot lift the ceiling past the base (strictly deflationary)", Params.adjustedTarget(10_000, 90_000) == base);
+        check("in a boom a high quote can lift the ceiling back up, but only to the base", Params.adjustedTarget(12_500, 90_000) == base);
 
         Ledger q1 = funded(w);                                      // supply 500, plain target 600
         long supQ = q1.supply();

@@ -5,4 +5,5 @@ cd "$(dirname "$0")"
 [ -d out ] || ./build.sh
 java -cp out com.techducat.speso.SelfTest
 java -cp out com.techducat.speso.AnchoredTest
+java -cp out com.techducat.speso.DeflationTest
 java -cp out com.techducat.speso.ToolsTest
