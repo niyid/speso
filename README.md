@@ -247,7 +247,7 @@ network is invalid on another.
 <!-- usability:start -->
 ## Usability test
 
-Tested with JDK 21 using `build.sh` on this code: all three test suites pass (224 checks). One testnet node (a single publisher with threshold 1, which also reports and mines) and thin wallets in separate processes, with `-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10`. Commands are shown as `speso-wallet` for `java -cp out com.techducat.speso.Cli`. Recorded on the previous release; the deflation change since adds a `burned since genesis` line to `rate`. Not exercised: several publishers on several machines, the live World Bank and IMF endpoints, and the Gradle build.
+Tested with JDK 21 using `build.sh` on this code: all four test suites pass (253 checks). One testnet node (a single publisher with threshold 1, which also reports and mines) and thin wallets in separate processes, with `-Dspeso.initbits=10 -Dspeso.blockms=1500 -Dspeso.retarget=10`. Commands are shown as `speso-wallet` for `java -cp out com.techducat.speso.Cli`. Not exercised: several publishers on several machines, the live World Bank and IMF endpoints, and the Gradle build.
 
 Video: [`usability/speso-usability-test.mp4`](usability/speso-usability-test.mp4)
 
@@ -255,6 +255,7 @@ Video: [`usability/speso-usability-test.mp4`](usability/speso-usability-test.mp4
 
 - The whole flow works: create a wallet, fund it, send, price a payment in GBU, pay in GBU, track a payment from pending to confirmed.
 - A publisher's market quote changes the supply target as designed (market 0.90 against a rate of 1.116 cuts the target from about Sm 18.8M to Sm 15.1M).
+- `rate` now shows `burned since genesis` (Sm 0 here: the supply is far below its ceiling, so nothing has been burned yet).
 - The launch guards work: `mainnet` without publishers, and any launch without `--i-understand-unaudited`, are refused.
 - Wallet creation warns plainly that there is no recovery; errors for fractions, a wrong password and a missing wallet say exactly what is wrong.
 
@@ -271,6 +272,7 @@ Video: [`usability/speso-usability-test.mp4`](usability/speso-usability-test.mp4
 **Still rough**
 
 - The oracle status line is still long and jargon-heavy for a first-time user.
+- Deflation (burning above the ceiling) is covered by `DeflationTest`, not by this run: the supply never passed its ceiling.
 - Terminals that cannot show the spesmilo sign print `Sm`.
 - There is no launcher script: the commands are `java -cp out com.techducat.speso.Cli` and `...Main`.
 
@@ -280,7 +282,7 @@ Video: [`usability/speso-usability-test.mp4`](usability/speso-usability-test.mp4
 | 2 | [Create a wallet](usability/screens/02-new.png) | Wallet creation warns plainly that there is no recovery. |
 | 3 | [Get your address](usability/screens/03-me.png) | Your address needs no password. |
 | 4 | [Check the node](usability/screens/04-status.png) | status: network, height, rate, supply and oracle, in readable units. |
-| 5 | [Read the rate](usability/screens/05-rate.png) | rate: score 111.6 means 1 Sm = 1.1160 GBU, with the five indicators. |
+| 5 | [Read the rate](usability/screens/05-rate.png) | rate: score 111.6 means 1 Sm = 1.1160 GBU. New: burned since genesis is Sm 0, because the supply is far below its ceiling. |
 | 6 | [Oracle publishers](usability/screens/06-publishers.png) | publishers: the registered publisher set and whether each is live. |
 | 7 | [Check balance](usability/screens/07-balance_alice_empty.png) | A new wallet starts at zero. |
 | 8 | [Price in GBU](usability/screens/08-quote.png) | quote: cost now and the worst case after 1, 3 and 6 blocks. |
@@ -293,7 +295,7 @@ Video: [`usability/speso-usability-test.mp4`](usability/speso-usability-test.mp4
 | 15 | [Pending state](usability/screens/15-tx_pending.png) | tx reports 'pending'. |
 | 16 | [Pending state](usability/screens/16-status_mempool.png) | status shows mempool 1 and mining no. |
 | 17 | [Confirmed](usability/screens/17-tx_confirmed_after.png) | Mining resumed: the same payment confirms. |
-| 18 | [Peg feedback](usability/screens/18-rate_market.png) | A publisher adds market=0.90: the supply target falls from about Sm 18.8M to Sm 15.1M. |
+| 18 | [Peg feedback](usability/screens/18-rate_market.png) | A publisher adds market=0.90: the ceiling falls from about Sm 18.8M to Sm 15.1M. Supply is far below it, so nothing is burned yet. |
 | 19 | [Node console](usability/screens/19-node_console.png) | The node's own console: publishers, quote, chain, balance. |
 | 20 | [Error: overspend](usability/screens/20-err_overspend.png) | Rejected with the specific cause and the amounts. |
 | 21 | [Error: bad address](usability/screens/21-err_badaddr.png) | Says what an address is and how to get yours. |
